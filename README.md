@@ -61,9 +61,11 @@ dotnet restore Aeron.sln
 dotnet build Aeron.sln -c Release --no-restore -warnaserror
 dotnet test Aeron.sln -c Release --no-build --verbosity normal
 
-# Publish native Windows x64 executable
+# Publish native Windows x64 executable (framework-dependent)
 dotnet publish src/Aeron.Desktop/Aeron.Desktop.csproj -c Release -r win-x64 --self-contained false -warnaserror -o artifacts/publish/win-x64
 ```
+
+Launching the framework-dependent `Aeron.Desktop.exe` requires the **.NET 10 LTS Windows Desktop Runtime (`Microsoft.WindowsDesktop.App 10.0.x`, `x64`)** on Windows 11 25H2+ (included automatically with the .NET 10 LTS SDK; install `Microsoft.DotNet.DesktopRuntime.10` `x64` when running the standalone published artifact without the SDK).
 
 Runtime application files are stored exclusively under `%LOCALAPPDATA%\Aeron` (`config`, `data`, `data\backups`, `logs`) with current-user Windows ACL protection—never inside the repository, cloud-synced `Documents`, or OmniRoute directories.
 

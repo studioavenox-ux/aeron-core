@@ -51,6 +51,10 @@ jobs:
         shell: pwsh
         run: pwsh -NoProfile -File scripts/verify-repo-hygiene.ps1
 
+      - name: Verify APEX resource measurement helper counter logic
+        shell: pwsh
+        run: pwsh -NoProfile -File scripts/measure-apex-m1.ps1 -SelfTest
+
       - name: Restore solution packages
         run: dotnet restore Aeron.sln
 
