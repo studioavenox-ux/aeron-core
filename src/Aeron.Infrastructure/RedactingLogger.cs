@@ -311,7 +311,18 @@ public sealed class RedactingLogger : IAeronLogger
 
         _paths.EnsureCreatedAndSecured();
 
-        var isNewFile = !File.Exists(_paths.ActiveLogFilePath);
+        if (!File.Exists(_paths.ActiveLogFilePath))
+        {
+            using (File.Create(_paths.ActiveLogFilePath))
+            {
+            }
+
+            if (OperatingSystem.IsWindows())
+            {
+                WindowsAclHelper.SecureFile(_paths.ActiveLogFilePath);
+            }
+        }
+
         _activeStream = new FileStream(
             _paths.ActiveLogFilePath,
             FileMode.Append,
@@ -319,11 +330,6 @@ public sealed class RedactingLogger : IAeronLogger
             FileShare.Read,
             bufferSize: 4096,
             FileOptions.None);
-
-        if (isNewFile && OperatingSystem.IsWindows())
-        {
-            WindowsAclHelper.SecureFile(_paths.ActiveLogFilePath);
-        }
 
         _ = Utf8NoBom;
     }

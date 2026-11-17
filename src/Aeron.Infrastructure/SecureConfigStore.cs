@@ -168,13 +168,13 @@ public sealed class SecureConfigStore : ISecureConfigStore
                        bufferSize: 4096,
                        FileOptions.WriteThrough))
             {
-                if (OperatingSystem.IsWindows())
-                {
-                    WindowsAclHelper.SecureFile(tempFilePath);
-                }
-
                 stream.Write(payload, 0, payload.Length);
                 stream.Flush(flushToDisk: true);
+            }
+
+            if (OperatingSystem.IsWindows())
+            {
+                WindowsAclHelper.SecureFile(tempFilePath);
             }
 
             File.Move(tempFilePath, _paths.ConfigFilePath, overwrite: true);

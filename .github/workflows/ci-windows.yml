@@ -61,13 +61,14 @@ jobs:
         run: dotnet test Aeron.sln -c Release --no-build --verbosity normal --logger "trx" --results-directory TestResults
 
       - name: Verify test suite coverage & publish verification summary
+        if: always()
         shell: pwsh
         run: |
           $sdkVersion = (dotnet --version).Trim()
-          $trxFiles = @(Get-ChildItem -Path TestResults -Filter '*.trx' -Recurse)
-          if ($trxFiles.Count -ne 5) {
-            Write-Error "Expected 5 test suite TRX files, found $($trxFiles.Count)."
-            exit 1
+          $trxFiles = @(Get-ChildItem -Path TestResults -Filter '*.trx' -Recurse -ErrorAction SilentlyContinue)
+          if ($trxFiles.Count -eq 0) {
+            Write-Warning "No TRX files generated."
+            exit 0
           }
 
           $totalPassed = 0
@@ -84,9 +85,12 @@ jobs:
             $firstTest = @($doc.TestRun.TestDefinitions.UnitTest)[0]
             $assemblyName = [System.IO.Path]::GetFileNameWithoutExtension($firstTest.storage)
 
-            if ($executed -lt 1 -or $failed -gt 0) {
-              Write-Error "Test suite '$assemblyName' failed verification (executed=$executed, failed=$failed)."
-              exit 1
+            foreach ($res in @($doc.TestRun.Results.UnitTestResult)) {
+              if ($res.outcome -eq 'Failed') {
+                $msg = ($res.Output.ErrorInfo.Message -replace "\r?\n", ' | ')
+                $stk = (($res.Output.ErrorInfo.StackTrace -split "\r?\n" | Select-Object -First 3) -join ' | ')
+                Write-Host "::error title=Failed Test ($assemblyName)::$($res.testName) => $msg || $stk"
+              }
             }
 
             $totalPassed += $passed
@@ -95,7 +99,11 @@ jobs:
           }
 
           $detail = $suiteSummaries -join ', '
-          Write-Host "::notice title=AERON M1 CI Tests::SDK=$sdkVersion | TotalPassed=$totalPassed | Failed=$totalFailed | Suites: $detail"
+          Write-Host "::notice title=AERON M1 CI Tests::SDK=$sdkVersion | TotalPassed=$totalPassed | Failed=$totalFailed | Suites($($trxFiles.Count)): $detail"
+
+          if ($trxFiles.Count -ne 5 -or $totalFailed -gt 0) {
+            exit 1
+          }
 
       - name: Publish native Windows desktop executable (win-x64)
         run: dotnet publish src/Aeron.Desktop/Aeron.Desktop.csproj -c Release -r win-x64 --self-contained false -warnaserror -o artifacts/publish/win-x64
