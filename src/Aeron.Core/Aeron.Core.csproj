@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Aeron.Core</RootNamespace>
+    <AssemblyName>Aeron.Core</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Aeron.Contracts\Aeron.Contracts.csproj" />
+    <ProjectReference Include="..\Aeron.Security\Aeron.Security.csproj" />
+    <ProjectReference Include="..\Aeron.Infrastructure\Aeron.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>
