@@ -1,0 +1,139 @@
+name: AERON Windows CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'arena/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aeron-windows-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: '1'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: '1'
+
+jobs:
+  build-test-publish:
+    name: Build, Test & Publish (Windows x64 · .NET 10 LTS)
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup .NET 10 LTS SDK
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Verify active .NET 10 LTS SDK
+        shell: pwsh
+        run: |
+          $sdkVersion = (dotnet --version).Trim()
+          Write-Host "Active .NET SDK: $sdkVersion"
+          if (-not $sdkVersion.StartsWith('10.0.')) {
+            Write-Error "Policy violation: expected .NET 10.0.x LTS SDK, got '$sdkVersion'."
+            exit 1
+          }
+
+      - name: Run repository hygiene, secret & policy scan
+        shell: pwsh
+        run: pwsh -NoProfile -File scripts/verify-repo-hygiene.ps1
+
+      - name: Verify APEX resource measurement helper counter logic
+        shell: pwsh
+        run: pwsh -NoProfile -File scripts/measure-apex-m1.ps1 -SelfTest
+
+      - name: Restore solution packages
+        run: dotnet restore Aeron.sln
+
+      - name: Build solution (Release, warnings as errors)
+        run: dotnet build Aeron.sln -c Release --no-restore -warnaserror
+
+      - name: Execute automated test suites (Part A CI gate)
+        run: dotnet test Aeron.sln -c Release --no-build --verbosity normal --logger "trx" --results-directory TestResults
+
+      - name: Verify test suite coverage & publish verification summary
+        if: always()
+        shell: pwsh
+        run: |
+          $sdkVersion = (dotnet --version).Trim()
+          $trxFiles = @(Get-ChildItem -Path TestResults -Filter '*.trx' -Recurse -ErrorAction SilentlyContinue)
+          if ($trxFiles.Count -eq 0) {
+            Write-Warning "No TRX files generated."
+            exit 0
+          }
+
+          $totalPassed = 0
+          $totalFailed = 0
+          $suiteSummaries = [System.Collections.Generic.List[string]]::new()
+
+          foreach ($trx in ($trxFiles | Sort-Object Name)) {
+            [xml]$doc = Get-Content -LiteralPath $trx.FullName -Raw
+            $counters = $doc.TestRun.ResultSummary.Counters
+            $passed = [int]$counters.passed
+            $failed = [int]$counters.failed
+            $executed = [int]$counters.executed
+
+            $firstTest = @($doc.TestRun.TestDefinitions.UnitTest)[0]
+            $assemblyName = [System.IO.Path]::GetFileNameWithoutExtension($firstTest.storage)
+
+            foreach ($res in @($doc.TestRun.Results.UnitTestResult)) {
+              if ($res.outcome -eq 'Failed') {
+                $msg = ($res.Output.ErrorInfo.Message -replace "\r?\n", ' | ')
+                $stk = (($res.Output.ErrorInfo.StackTrace -split "\r?\n" | Select-Object -First 3) -join ' | ')
+                Write-Host "::error title=Failed Test ($assemblyName)::$($res.testName) => $msg || $stk"
+              }
+            }
+
+            $totalPassed += $passed
+            $totalFailed += $failed
+            $suiteSummaries.Add("$assemblyName=$passed/$executed")
+          }
+
+          $detail = $suiteSummaries -join ', '
+          Write-Host "::notice title=AERON M1 CI Tests::SDK=$sdkVersion | TotalPassed=$totalPassed | Failed=$totalFailed | Suites($($trxFiles.Count)): $detail"
+
+          if ($trxFiles.Count -ne 5 -or $totalFailed -gt 0) {
+            exit 1
+          }
+
+      - name: Publish native Windows desktop executable (win-x64)
+        run: dotnet publish src/Aeron.Desktop/Aeron.Desktop.csproj -c Release -r win-x64 --self-contained false -warnaserror -o artifacts/publish/win-x64
+
+      - name: Verify published native Windows executable
+        shell: pwsh
+        run: |
+          $exePath = Join-Path 'artifacts/publish/win-x64' 'Aeron.Desktop.exe'
+          if (-not (Test-Path -LiteralPath $exePath -PathType Leaf)) {
+            Write-Error "Expected native Windows executable not found at '$exePath'."
+            exit 1
+          }
+          $item = Get-Item -LiteralPath $exePath
+          Write-Host "::notice title=AERON M1 Native Publish::Aeron.Desktop.exe verified ($($item.Length) bytes, win-x64 Release)"
+
+      - name: Upload automated test results
+        if: always() && hashFiles('TestResults/**/*.trx') != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: m1-test-results
+          path: TestResults/**/*.trx
+          retention-days: 14
+
+      - name: Upload win-x64 Release executable for APEX interactive verification
+        uses: actions/upload-artifact@v7
+        with:
+          name: aeron-desktop-win-x64
+          path: artifacts/publish/win-x64/**
+          retention-days: 14
