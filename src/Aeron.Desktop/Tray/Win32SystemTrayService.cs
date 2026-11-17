@@ -193,7 +193,7 @@ internal static class NativeTrayMethods
         int nHeight,
         uint nPlanes,
         uint nBitCount,
-        nint lpBits);
+        byte[] lpBits);
 
     [DllImport("gdi32.dll", ExactSpelling = true, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]

@@ -61,7 +61,13 @@ public partial class MainWindow : Window
             WindowState = WindowState.Normal;
         }
 
-        _ = Activate();
+        if (!Activate())
+        {
+            Topmost = true;
+            Topmost = false;
+            _ = Activate();
+        }
+
         _ = Focus();
     }
 

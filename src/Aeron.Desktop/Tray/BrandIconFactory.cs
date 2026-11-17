@@ -61,7 +61,10 @@ internal static class BrandIconFactory
 
             Marshal.Copy(pixels, 0, bitsPtr, pixels.Length);
 
-            maskBitmap = NativeTrayMethods.CreateBitmap(size, size, 1, 1, nint.Zero);
+            // Zero-initialized 1-bpp AND mask (32x32 = 128 bytes; WORD-aligned scanlines)
+            // ensures clean per-pixel alpha blending across all Windows 11 tray DPI scales.
+            var zeroMask = new byte[(size / 8) * size];
+            maskBitmap = NativeTrayMethods.CreateBitmap(size, size, 1, 1, zeroMask);
             if (maskBitmap == nint.Zero)
             {
                 return nint.Zero;

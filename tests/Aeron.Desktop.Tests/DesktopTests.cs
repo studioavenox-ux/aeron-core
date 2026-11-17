@@ -348,4 +348,25 @@ public sealed class MainWindowViewModelAndTrayStateTests
             }
         }
     }
+
+    [Fact]
+    public void BrandIconFactory_CreatesValidWin32TrayIconAndFrozenWpfWindowIcon()
+    {
+        var windowIcon = BrandIconFactory.CreateWindowIcon();
+        Assert.NotNull(windowIcon);
+        Assert.True(windowIcon.IsFrozen);
+
+        var hIcon = BrandIconFactory.CreateTrayHIcon();
+        try
+        {
+            Assert.NotEqual(nint.Zero, hIcon);
+        }
+        finally
+        {
+            if (hIcon != nint.Zero)
+            {
+                Assert.True(NativeTrayMethods.DestroyIcon(hIcon));
+            }
+        }
+    }
 }
