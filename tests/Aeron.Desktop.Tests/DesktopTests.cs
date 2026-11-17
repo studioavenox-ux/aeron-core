@@ -3,8 +3,10 @@ using System.IO.Pipes;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
+using System.Windows;
 using Aeron.Contracts;
 using Aeron.Core;
+using Aeron.Desktop;
 using Aeron.Desktop.SingleInstance;
 using Aeron.Desktop.Tray;
 using Aeron.Desktop.ViewModels;
@@ -445,5 +447,91 @@ public sealed class MainWindowViewModelAndTrayStateTests
                 Assert.True(NativeTrayMethods.DestroyIcon(hIcon));
             }
         }
+    }
+
+    /// <summary>
+    /// Runs the supplied WPF-sensitive action on a dedicated STA thread so a real
+    /// <see cref="System.Windows.Application"/> and <see cref="MainWindow"/> can be
+    /// instantiated. This exercises the actual WPF window close-event path rather than
+    /// the ViewModel in isolation.
+    /// </summary>
+    private static async Task RunOnStaThreadAsync(Func<Task> action)
+    {
+        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var thread = new Thread(async () =>
+        {
+            try
+            {
+                await action();
+                tcs.TrySetResult();
+            }
+            catch (Exception ex)
+            {
+                tcs.TrySetException(ex);
+            }
+        })
+        {
+            IsBackground = true
+        };
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+    }
+
+    [Fact]
+    public async Task MainWindow_CloseEvent_CloseToTrayEnabled_KeepsWindowAlive()
+    {
+        await RunOnStaThreadAsync(async () =>
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), $"aeron-wpf-{Guid.NewGuid():N}");
+            try
+            {
+                await using var host = AeronFoundationHost.Create(AppPaths.FromRoot(tempRoot));
+                await host.Lifecycle.StartAsync();
+
+                var tray = new FakeSystemTrayService();
+                Assert.True(tray.Initialize("AERON"));
+
+                using var vm = new MainWindowViewModel(
+                    host.Lifecycle,
+                    new FixedOsBaselineHealthService(host.HealthService, simulatedBuild: 26200),
+                    host.EventBus,
+                    tray,
+                    host.Logger);
+
+                Assert.True(vm.CloseToTray);
+
+                // Build a real Application so MainWindow.InitializeComponent() can resolve
+                // the StaticResource brushes/styles from FoundationDark.xaml.
+                var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+                var themeUri = new Uri(
+                    "pack://application:,,,/Aeron.Desktop;component/Themes/FoundationDark.xaml",
+                    UriKind.Absolute);
+                app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = themeUri });
+
+                var window = new MainWindow(vm);
+                bool windowClosed = false;
+                window.Closed += (_, _) => windowClosed = true;
+
+                // Simulate the user clicking the window X.
+                window.Close();
+
+                // CloseToTray enabled: the window must NOT actually close; it is hidden
+                // to the tray and the process keeps running.
+                Assert.False(windowClosed);
+                Assert.Equal(AppLifecycleState.Running, host.Lifecycle.CurrentState);
+                Assert.True(tray.IsIconRegistered);
+                Assert.Equal(0, tray.DisposeCallCount);
+
+                app.Shutdown();
+            }
+            finally
+            {
+                if (Directory.Exists(tempRoot))
+                {
+                    Directory.Delete(tempRoot, recursive: true);
+                }
+            }
+        });
     }
 }
