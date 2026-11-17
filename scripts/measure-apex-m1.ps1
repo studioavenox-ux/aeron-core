@@ -51,9 +51,10 @@ function Resolve-GpuUtilizationReading {
 
         $statusProp = $sample.PSObject.Properties['Status']
         if ($null -ne $statusProp -and $null -ne $statusProp.Value) {
-            $statusCode = [uint32]$statusProp.Value
+            # Convert via Int64 so both UInt32 PDH codes (e.g., 3221228486) and signed HRESULTs work safely.
+            $statusCode = [int64]$statusProp.Value
             # PDH_CSTATUS_VALID_DATA (0) and PDH_CSTATUS_NEW_DATA (1) are the only valid PDH statuses.
-            if ($statusCode -ne [uint32]0 -and $statusCode -ne [uint32]1) {
+            if ($statusCode -ne 0L -and $statusCode -ne 1L) {
                 continue
             }
         }
@@ -183,10 +184,11 @@ function Invoke-MeasurementSelfTest {
         throw "Expected unavailable for empty samples, got '$emptyResult'."
     }
 
-    # 2. Invalid PDH status codes (e.g., PDH_INVALID_DATA 0xC0000BC6) and NaN must report unavailable.
+    # 2. Invalid PDH status codes (PDH_INVALID_DATA = 0xC0000BC6 = 3221228486), NaN, and negatives report unavailable.
     $invalidSamples = @(
-        [PSCustomObject]@{ Status = [uint32]0xC0000BC6; CookedValue = 0.0 },
-        [PSCustomObject]@{ Status = [uint32]0; CookedValue = [double]::NaN }
+        [PSCustomObject]@{ Status = [uint32]3221228486L; CookedValue = 0.0 },
+        [PSCustomObject]@{ Status = [uint32]0; CookedValue = [double]::NaN },
+        [PSCustomObject]@{ Status = [uint32]0; CookedValue = -1.0 }
     )
     $invalidResult = Resolve-GpuUtilizationReading -CounterSamples $invalidSamples
     if ($invalidResult -cne $expectedUnavailable) {
@@ -247,7 +249,7 @@ function Invoke-MeasurementSelfTest {
         throw "Unexpected positive GPU output: '$positiveResult'."
     }
 
-    Write-Host "measure-apex-m1.ps1 self-test PASSED (measured zero, non-zero, and unavailable counter paths verified)."
+    Write-Host "::notice title=APEX Measurement Helper::Self-test PASSED (actual 0.000%, non-zero, and '$expectedUnavailable' verified)"
 }
 
 if ($SelfTest) {
