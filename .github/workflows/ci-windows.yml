@@ -1,0 +1,90 @@
+name: AERON Windows CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'arena/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aeron-windows-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: '1'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: '1'
+
+jobs:
+  build-test-publish:
+    name: Build, Test & Publish (Windows x64 · .NET 10 LTS)
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup .NET 10 LTS SDK
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Verify active .NET 10 LTS SDK
+        shell: pwsh
+        run: |
+          $sdkVersion = (dotnet --version).Trim()
+          Write-Host "Active .NET SDK: $sdkVersion"
+          if (-not $sdkVersion.StartsWith('10.0.')) {
+            Write-Error "Policy violation: expected .NET 10.0.x LTS SDK, got '$sdkVersion'."
+            exit 1
+          }
+
+      - name: Run repository hygiene, secret & policy scan
+        shell: pwsh
+        run: pwsh -NoProfile -File scripts/verify-repo-hygiene.ps1
+
+      - name: Restore solution packages
+        run: dotnet restore Aeron.sln
+
+      - name: Build solution (Release, warnings as errors)
+        run: dotnet build Aeron.sln -c Release --no-restore -warnaserror
+
+      - name: Execute automated test suites (Part A CI gate)
+        run: dotnet test Aeron.sln -c Release --no-build --verbosity normal --logger "trx" --results-directory TestResults
+
+      - name: Publish native Windows desktop executable (win-x64)
+        run: dotnet publish src/Aeron.Desktop/Aeron.Desktop.csproj -c Release -r win-x64 --self-contained false -warnaserror -o artifacts/publish/win-x64
+
+      - name: Verify published native Windows executable
+        shell: pwsh
+        run: |
+          $exePath = Join-Path 'artifacts/publish/win-x64' 'Aeron.Desktop.exe'
+          if (-not (Test-Path -LiteralPath $exePath -PathType Leaf)) {
+            Write-Error "Expected native Windows executable not found at '$exePath'."
+            exit 1
+          }
+          $item = Get-Item -LiteralPath $exePath
+          Write-Host "Verified native executable: $($item.FullName) ($($item.Length) bytes)"
+
+      - name: Upload automated test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m1-test-results
+          path: TestResults/**/*.trx
+          retention-days: 14
+
+      - name: Upload win-x64 Release executable for APEX interactive verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: aeron-desktop-win-x64
+          path: artifacts/publish/win-x64/**
+          retention-days: 14
