@@ -452,17 +452,18 @@ public sealed class MainWindowViewModelAndTrayStateTests
     /// <summary>
     /// Runs the supplied WPF-sensitive action on a dedicated STA thread so a real
     /// <see cref="System.Windows.Application"/> and <see cref="MainWindow"/> can be
-    /// instantiated. This exercises the actual WPF window close-event path rather than
-    /// the ViewModel in isolation.
+    /// instantiated. Async work is blocked with <see cref="Task.GetAwaiter().GetResult"/>
+    /// so the thread remains STA for the lifetime of the WPF objects. This exercises
+    /// the actual WPF window close-event path rather than the ViewModel in isolation.
     /// </summary>
-    private static async Task RunOnStaThreadAsync(Func<Task> action)
+    private static async Task RunOnStaThreadAsync(Action action)
     {
         var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var thread = new Thread(async () =>
+        var thread = new Thread(() =>
         {
             try
             {
-                await action();
+                action();
                 tcs.TrySetResult();
             }
             catch (Exception ex)
@@ -481,13 +482,14 @@ public sealed class MainWindowViewModelAndTrayStateTests
     [Fact]
     public async Task MainWindow_CloseEvent_CloseToTrayEnabled_KeepsWindowAlive()
     {
-        await RunOnStaThreadAsync(async () =>
+        await RunOnStaThreadAsync(() =>
         {
             var tempRoot = Path.Combine(Path.GetTempPath(), $"aeron-wpf-{Guid.NewGuid():N}");
+            var host = AeronFoundationHost.Create(AppPaths.FromRoot(tempRoot));
             try
             {
-                await using var host = AeronFoundationHost.Create(AppPaths.FromRoot(tempRoot));
-                await host.Lifecycle.StartAsync();
+                // Block on async startup so we remain on this STA thread for WPF work.
+                host.Lifecycle.StartAsync().GetAwaiter().GetResult();
 
                 var tray = new FakeSystemTrayService();
                 Assert.True(tray.Initialize("AERON"));
@@ -527,6 +529,14 @@ public sealed class MainWindowViewModelAndTrayStateTests
             }
             finally
             {
+                try
+                {
+                    host.DisposeAsync().GetAwaiter().GetResult();
+                }
+                catch
+                {
+                    // Best-effort disposal; test outcome already determined.
+                }
                 if (Directory.Exists(tempRoot))
                 {
                     Directory.Delete(tempRoot, recursive: true);
