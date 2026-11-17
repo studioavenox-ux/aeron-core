@@ -168,94 +168,97 @@ public sealed class AppLifecycleCoordinator : IAppLifecycle
                     $"Invalid lifecycle transition: cannot start AERON from state '{CurrentState}'.");
             }
 
-            TransitionTo(AppLifecycleState.Starting, "Foundation startup initiated");
-
-            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
-                cancellationToken,
-                _shutdownCts.Token);
-            var token = linkedCts.Token;
-
-            // Execute filesystem and configuration bootstrap off the caller thread so UI Dispatcher never blocks.
-            var configResult = await Task.Run(() =>
+            try
             {
-                token.ThrowIfCancellationRequested();
-                _paths.EnsureCreatedAndSecured();
-                return _configStore.LoadOrCreateDefault();
-            }, token).ConfigureAwait(false);
+                TransitionTo(AppLifecycleState.Starting, "Foundation startup initiated");
 
-            if (configResult.IsFailure)
-            {
-                throw new LifecycleStartupException(configResult.ErrorCode, configResult.ErrorMessage);
-            }
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
+                    cancellationToken,
+                    _shutdownCts.Token);
+                var token = linkedCts.Token;
 
-            var loadedConfig = configResult.Value;
-            lock (_stateLock)
-            {
-                _currentConfig = loadedConfig;
-                _isConfigValid = true;
-            }
-
-            _logger.Configure(
-                loadedConfig.Logging.MinimumLevel,
-                loadedConfig.Logging.MaxFileBytes,
-                loadedConfig.Logging.MaxRetainedFiles);
-
-            _logger.LogInfo(
-                nameof(AppLifecycleCoordinator),
-                "Validated AERON configuration and security invariants.",
-                new Dictionary<string, string?>
+                // Execute filesystem and configuration bootstrap off the caller thread so UI Dispatcher never blocks.
+                var configResult = await Task.Run(() =>
                 {
-                    ["instanceId"] = InstanceId,
-                    ["closeToTray"] = loadedConfig.Window.CloseToTray.ToString()
-                });
+                    token.ThrowIfCancellationRequested();
+                    _paths.EnsureCreatedAndSecured();
+                    return _configStore.LoadOrCreateDefault();
+                }, token).ConfigureAwait(false);
 
-            await _databaseInitializer.InitializeAsync(token).ConfigureAwait(false);
+                if (configResult.IsFailure)
+                {
+                    throw new LifecycleStartupException(configResult.ErrorCode, configResult.ErrorMessage);
+                }
 
-            var dbHealth = await _databaseHealthProbe.ProbeAsync(token).ConfigureAwait(false);
-            if (!dbHealth.IsHealthy)
-            {
-                throw new LifecycleStartupException(
-                    "DATABASE_UNHEALTHY",
-                    $"SQLite foundation verification failed: {dbHealth.StatusMessage}");
+                var loadedConfig = configResult.Value;
+                lock (_stateLock)
+                {
+                    _currentConfig = loadedConfig;
+                    _isConfigValid = true;
+                }
+
+                _logger.Configure(
+                    loadedConfig.Logging.MinimumLevel,
+                    loadedConfig.Logging.MaxFileBytes,
+                    loadedConfig.Logging.MaxRetainedFiles);
+
+                _logger.LogInfo(
+                    nameof(AppLifecycleCoordinator),
+                    "Validated AERON configuration and security invariants.",
+                    new Dictionary<string, string?>
+                    {
+                        ["instanceId"] = InstanceId,
+                        ["closeToTray"] = loadedConfig.Window.CloseToTray.ToString()
+                    });
+
+                await _databaseInitializer.InitializeAsync(token).ConfigureAwait(false);
+
+                var dbHealth = await _databaseHealthProbe.ProbeAsync(token).ConfigureAwait(false);
+                if (!dbHealth.IsHealthy)
+                {
+                    throw new LifecycleStartupException(
+                        "DATABASE_UNHEALTHY",
+                        $"SQLite foundation verification failed: {dbHealth.StatusMessage}");
+                }
+
+                _databaseReady = true;
+
+                var startedAt = _clock.UtcNow;
+                await _journalStore
+                    .RecordTransitionAsync(InstanceId, AppLifecycleState.Starting, "Startup verified", startedAt, token)
+                    .ConfigureAwait(false);
+
+                lock (_stateLock)
+                {
+                    _startedAtUtc = startedAt;
+                }
+
+                TransitionTo(AppLifecycleState.Running, "Foundation ready");
+
+                await _journalStore
+                    .RecordTransitionAsync(InstanceId, AppLifecycleState.Running, "Foundation ready", startedAt, token)
+                    .ConfigureAwait(false);
+
+                _logger.LogInfo(nameof(AppLifecycleCoordinator), "AERON foundation entered Running state.");
             }
-
-            _databaseReady = true;
-
-            var startedAt = _clock.UtcNow;
-            await _journalStore
-                .RecordTransitionAsync(InstanceId, AppLifecycleState.Starting, "Startup verified", startedAt, token)
-                .ConfigureAwait(false);
-
-            lock (_stateLock)
+            catch (Exception ex)
             {
-                _startedAtUtc = startedAt;
+                CancelRootShutdownTokenSafe();
+                await ExecuteShutdownHooksSafeAsync().ConfigureAwait(false);
+
+                if (CurrentState != AppLifecycleState.Faulted &&
+                    IsTransitionAllowed(CurrentState, AppLifecycleState.Faulted))
+                {
+                    TransitionTo(AppLifecycleState.Faulted, "Foundation startup rolled back due to failure");
+                }
+
+                _logger.LogCritical(
+                    nameof(AppLifecycleCoordinator),
+                    "AERON foundation startup failed and rolled back cleanly.",
+                    ex);
+                _logger.Flush();
+                throw;
             }
-
-            TransitionTo(AppLifecycleState.Running, "Foundation ready");
-
-            await _journalStore
-                .RecordTransitionAsync(InstanceId, AppLifecycleState.Running, "Foundation ready", startedAt, token)
-                .ConfigureAwait(false);
-
-            _logger.LogInfo(nameof(AppLifecycleCoordinator), "AERON foundation entered Running state.");
-        }
-        catch (Exception ex)
-        {
-            CancelRootShutdownTokenSafe();
-            await ExecuteShutdownHooksSafeAsync().ConfigureAwait(false);
-
-            if (CurrentState != AppLifecycleState.Faulted &&
-                IsTransitionAllowed(CurrentState, AppLifecycleState.Faulted))
-            {
-                TransitionTo(AppLifecycleState.Faulted, "Foundation startup rolled back due to failure");
-            }
-
-            _logger.LogCritical(
-                nameof(AppLifecycleCoordinator),
-                "AERON foundation startup failed and rolled back cleanly.",
-                ex);
-            _logger.Flush();
-            throw;
         }
         finally
         {

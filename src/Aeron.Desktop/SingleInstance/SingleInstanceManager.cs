@@ -321,7 +321,7 @@ public sealed class SingleInstanceManager : IAsyncDisposable
                     direction: PipeDirection.In,
                     maxNumberOfServerInstances: 1,
                     transmissionMode: PipeTransmissionMode.Byte,
-                    options: PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly,
+                    options: PipeOptions.Asynchronous,
                     inBufferSize: MaxCommandBytes,
                     outBufferSize: 0,
                     pipeSecurity: pipeSecurity);
