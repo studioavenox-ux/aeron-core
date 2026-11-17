@@ -141,7 +141,7 @@ public sealed class SingleInstanceManagerTests
                          PipeDirection.Out,
                          PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly))
         {
-            await rogueClient.ConnectAsync(TimeSpan.FromSeconds(5));
+            await rogueClient.ConnectAsync(timeout: 5000);
             var bogus = Encoding.UTF8.GetBytes("UNRECOGNIZED:COMMAND\n");
             await rogueClient.WriteAsync(bogus);
             await rogueClient.FlushAsync();

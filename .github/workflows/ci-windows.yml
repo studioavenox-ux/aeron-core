@@ -60,6 +60,43 @@ jobs:
       - name: Execute automated test suites (Part A CI gate)
         run: dotnet test Aeron.sln -c Release --no-build --verbosity normal --logger "trx" --results-directory TestResults
 
+      - name: Verify test suite coverage & publish verification summary
+        shell: pwsh
+        run: |
+          $sdkVersion = (dotnet --version).Trim()
+          $trxFiles = @(Get-ChildItem -Path TestResults -Filter '*.trx' -Recurse)
+          if ($trxFiles.Count -ne 5) {
+            Write-Error "Expected 5 test suite TRX files, found $($trxFiles.Count)."
+            exit 1
+          }
+
+          $totalPassed = 0
+          $totalFailed = 0
+          $suiteSummaries = [System.Collections.Generic.List[string]]::new()
+
+          foreach ($trx in ($trxFiles | Sort-Object Name)) {
+            [xml]$doc = Get-Content -LiteralPath $trx.FullName -Raw
+            $counters = $doc.TestRun.ResultSummary.Counters
+            $passed = [int]$counters.passed
+            $failed = [int]$counters.failed
+            $executed = [int]$counters.executed
+
+            $firstTest = @($doc.TestRun.TestDefinitions.UnitTest)[0]
+            $assemblyName = [System.IO.Path]::GetFileNameWithoutExtension($firstTest.storage)
+
+            if ($executed -lt 1 -or $failed -gt 0) {
+              Write-Error "Test suite '$assemblyName' failed verification (executed=$executed, failed=$failed)."
+              exit 1
+            }
+
+            $totalPassed += $passed
+            $totalFailed += $failed
+            $suiteSummaries.Add("$assemblyName=$passed/$executed")
+          }
+
+          $detail = $suiteSummaries -join ', '
+          Write-Host "::notice title=AERON M1 CI Tests::SDK=$sdkVersion | TotalPassed=$totalPassed | Failed=$totalFailed | Suites: $detail"
+
       - name: Publish native Windows desktop executable (win-x64)
         run: dotnet publish src/Aeron.Desktop/Aeron.Desktop.csproj -c Release -r win-x64 --self-contained false -warnaserror -o artifacts/publish/win-x64
 
@@ -72,18 +109,18 @@ jobs:
             exit 1
           }
           $item = Get-Item -LiteralPath $exePath
-          Write-Host "Verified native executable: $($item.FullName) ($($item.Length) bytes)"
+          Write-Host "::notice title=AERON M1 Native Publish::Aeron.Desktop.exe verified ($($item.Length) bytes, win-x64 Release)"
 
       - name: Upload automated test results
-        if: always()
-        uses: actions/upload-artifact@v4
+        if: always() && hashFiles('TestResults/**/*.trx') != ''
+        uses: actions/upload-artifact@v7
         with:
           name: m1-test-results
           path: TestResults/**/*.trx
           retention-days: 14
 
       - name: Upload win-x64 Release executable for APEX interactive verification
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: aeron-desktop-win-x64
           path: artifacts/publish/win-x64/**
