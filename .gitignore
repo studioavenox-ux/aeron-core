@@ -218,3 +218,85 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ==============================================================================
+# AERON — .NET 10 LTS / WPF / Visual Studio / Security Exclusions
+# ==============================================================================
+
+# Build and publish outputs
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+artifacts/
+publish/
+[Ll]og/
+[Ll]ogs/
+
+# Test results and coverage
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+*.coverage
+*.coveragexml
+
+# Visual Studio / Rider / VS Code user state
+.vs/
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+.idea/
+*.sln.iml
+
+# WPF generated temporary projects
+*_wpftmp.csproj
+*_wpftmp.vbproj
+
+# NuGet artifacts
+*.nupkg
+*.snupkg
+project.lock.json
+project.fragment.lock.json
+
+# Local runtime state, SQLite databases, and JSONL logs
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+*.jsonl
+aeron.config.json
+aeron.config.*.tmp
+
+# Secrets, keys, and certificates (never commit)
+.env.*
+!.env.example
+*.pfx
+*.p12
+*.key
+*.pem
+*.crt
+*.cer
+*.secret
+*.secrets
+*credentials*.json
+
+# Prohibited local model weights (never download or commit)
+*.gguf
+*.ggml
+*.safetensors
+*.onnx
+*.pt
+*.pth
+*.tflite
+

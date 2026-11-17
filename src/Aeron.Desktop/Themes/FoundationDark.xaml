@@ -1,0 +1,145 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Stable, standard WPF dark ResourceDictionary for AERON Milestone 1.
+         Deliberately avoids experimental WPF0001 theming APIs under warnings-as-errors
+         and uses zero shader effects or continuous animations for minimal iGPU/CPU overhead. -->
+
+    <SolidColorBrush x:Key="AeronWindowBackgroundBrush" Color="#0B0F17" />
+    <SolidColorBrush x:Key="AeronHeaderBackgroundBrush" Color="#0F1623" />
+    <SolidColorBrush x:Key="AeronCardBackgroundBrush" Color="#111827" />
+    <SolidColorBrush x:Key="AeronBorderBrush" Color="#1F2937" />
+    <SolidColorBrush x:Key="AeronAccentBrush" Color="#38BDF8" />
+    <SolidColorBrush x:Key="AeronAccentMutedBrush" Color="#16324A" />
+    <SolidColorBrush x:Key="AeronTextPrimaryBrush" Color="#F3F4F6" />
+    <SolidColorBrush x:Key="AeronTextSecondaryBrush" Color="#9CA3AF" />
+    <SolidColorBrush x:Key="AeronTextMutedBrush" Color="#6B7280" />
+    <SolidColorBrush x:Key="AeronSuccessBrush" Color="#22C55E" />
+    <SolidColorBrush x:Key="AeronSuccessBackgroundBrush" Color="#0E291B" />
+    <SolidColorBrush x:Key="AeronWarningBrush" Color="#F59E0B" />
+    <SolidColorBrush x:Key="AeronWarningBackgroundBrush" Color="#2E1F09" />
+    <SolidColorBrush x:Key="AeronDangerBrush" Color="#EF4444" />
+    <SolidColorBrush x:Key="AeronButtonBackgroundBrush" Color="#182234" />
+    <SolidColorBrush x:Key="AeronButtonHoverBrush" Color="#22314A" />
+    <SolidColorBrush x:Key="AeronButtonPressedBrush" Color="#2B3E5E" />
+    <SolidColorBrush x:Key="AeronDangerButtonBrush" Color="#3A1519" />
+    <SolidColorBrush x:Key="AeronDangerButtonHoverBrush" Color="#521C22" />
+
+    <Style x:Key="AeronCardBorderStyle" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource AeronCardBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource AeronBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="18,16" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+    </Style>
+
+    <Style x:Key="AeronCardHeadingStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource AeronAccentBrush}" />
+        <Setter Property="FontFamily" Value="Segoe UI" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Margin" Value="0,0,0,10" />
+    </Style>
+
+    <Style x:Key="AeronLabelStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource AeronTextSecondaryBrush}" />
+        <Setter Property="FontFamily" Value="Segoe UI" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+
+    <Style x:Key="AeronValueStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource AeronTextPrimaryBrush}" />
+        <Setter Property="FontFamily" Value="Segoe UI" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <Style x:Key="AeronSecondaryButtonStyle" TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource AeronButtonBackgroundBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource AeronTextPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource AeronBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="FontFamily" Value="Segoe UI" />
+        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Padding" Value="14,7" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="RootBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="6"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          RecognizesAccessKey="True" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="RootBorder" Property="Background" Value="{StaticResource AeronButtonHoverBrush}" />
+                            <Setter TargetName="RootBorder" Property="BorderBrush" Value="{StaticResource AeronAccentBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="RootBorder" Property="Background" Value="{StaticResource AeronButtonPressedBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="RootBorder" Property="BorderBrush" Value="{StaticResource AeronAccentBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="RootBorder" Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="AeronExitButtonStyle" TargetType="Button" BasedOn="{StaticResource AeronSecondaryButtonStyle}">
+        <Setter Property="Background" Value="{StaticResource AeronDangerButtonBrush}" />
+        <Setter Property="BorderBrush" Value="#69232B" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="RootBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="6"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          RecognizesAccessKey="True" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="RootBorder" Property="Background" Value="{StaticResource AeronDangerButtonHoverBrush}" />
+                            <Setter TargetName="RootBorder" Property="BorderBrush" Value="{StaticResource AeronDangerBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="RootBorder" Property="BorderBrush" Value="{StaticResource AeronDangerBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="RootBorder" Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="AeronCheckBoxStyle" TargetType="CheckBox">
+        <Setter Property="Foreground" Value="{StaticResource AeronTextPrimaryBrush}" />
+        <Setter Property="FontFamily" Value="Segoe UI" />
+        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+</ResourceDictionary>

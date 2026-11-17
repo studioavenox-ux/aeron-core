@@ -1,0 +1,246 @@
+<Window x:Class="Aeron.Desktop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AERON — Foundation"
+        Width="920"
+        Height="620"
+        MinWidth="760"
+        MinHeight="540"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource AeronWindowBackgroundBrush}"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header Bar -->
+        <Border Grid.Row="0"
+                Background="{StaticResource AeronHeaderBackgroundBrush}"
+                BorderBrush="{StaticResource AeronBorderBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="24,16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="AERON"
+                               Foreground="{StaticResource AeronTextPrimaryBrush}"
+                               FontFamily="Segoe UI"
+                               FontSize="20"
+                               FontWeight="Bold"
+                               VerticalAlignment="Center" />
+                    <Border Background="{StaticResource AeronAccentMutedBrush}"
+                            BorderBrush="{StaticResource AeronAccentBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="8,2"
+                            Margin="12,0,0,0"
+                            VerticalAlignment="Center">
+                        <TextBlock Text="{Binding LifecycleStateText}"
+                                   Foreground="{StaticResource AeronAccentBrush}"
+                                   FontFamily="Segoe UI"
+                                   FontSize="11"
+                                   FontWeight="SemiBold" />
+                    </Border>
+                    <TextBlock Text="Milestone 1 — Native Foundation"
+                               Foreground="{StaticResource AeronTextSecondaryBrush}"
+                               FontFamily="Segoe UI"
+                               FontSize="12.5"
+                               Margin="12,0,0,0"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="_Refresh"
+                            Command="{Binding RefreshCommand}"
+                            Style="{StaticResource AeronSecondaryButtonStyle}"
+                            Margin="0,0,8,0" />
+                    <Button Content="_Minimize to Tray"
+                            Command="{Binding MinimizeToTrayCommand}"
+                            Style="{StaticResource AeronSecondaryButtonStyle}"
+                            Margin="0,0,8,0" />
+                    <Button Content="E_xit AERON"
+                            Command="{Binding ExitApplicationCommand}"
+                            Style="{StaticResource AeronExitButtonStyle}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- OS Baseline Readiness Banner -->
+        <Border Grid.Row="1"
+                Margin="24,18,24,0"
+                CornerRadius="6"
+                BorderThickness="1"
+                Padding="14,10">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Background" Value="{StaticResource AeronSuccessBackgroundBrush}" />
+                    <Setter Property="BorderBrush" Value="{StaticResource AeronSuccessBrush}" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding MeetsOsBaseline}" Value="False">
+                            <Setter Property="Background" Value="{StaticResource AeronWarningBackgroundBrush}" />
+                            <Setter Property="BorderBrush" Value="{StaticResource AeronWarningBrush}" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0"
+                           Text="{Binding OsBaselineBadgeText}"
+                           FontFamily="Segoe UI"
+                           FontSize="11"
+                           FontWeight="Bold"
+                           VerticalAlignment="Center"
+                           Margin="0,0,14,0">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{StaticResource AeronSuccessBrush}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding MeetsOsBaseline}" Value="False">
+                                    <Setter Property="Foreground" Value="{StaticResource AeronWarningBrush}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <TextBlock Grid.Column="1"
+                           Text="{Binding OsBaselineSummary}"
+                           Foreground="{StaticResource AeronTextPrimaryBrush}"
+                           FontFamily="Segoe UI"
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+
+        <!-- Verified Foundation Subsystem Cards -->
+        <ScrollViewer Grid.Row="2"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Padding="24,18,24,18">
+            <UniformGrid Columns="2" Rows="2">
+
+                <!-- Card 1: Lifecycle & Shell -->
+                <Border Style="{StaticResource AeronCardBorderStyle}" Margin="0,0,9,9">
+                    <StackPanel>
+                        <TextBlock Text="LIFECYCLE &amp; DESKTOP SHELL" Style="{StaticResource AeronCardHeadingStyle}" />
+
+                        <TextBlock Text="Build &amp; Runtime" Style="{StaticResource AeronLabelStyle}" />
+                        <TextBlock Margin="0,2,0,10" Style="{StaticResource AeronValueStyle}">
+                            <Run Text="{Binding ApplicationVersion, Mode=OneWay}" />
+                            <Run Text=" · " />
+                            <Run Text="{Binding RuntimeDescription, Mode=OneWay}" />
+                        </TextBlock>
+
+                        <TextBlock Text="Instance &amp; Started (UTC)" Style="{StaticResource AeronLabelStyle}" />
+                        <TextBlock Margin="0,2,0,12" Style="{StaticResource AeronValueStyle}">
+                            <Run Text="{Binding InstanceId, Mode=OneWay}" />
+                            <Run Text=" · " />
+                            <Run Text="{Binding StartedAtDisplay, Mode=OneWay}" />
+                        </TextBlock>
+
+                        <CheckBox Content="Closing window (X) minimizes AERON to system tray"
+                                  IsChecked="{Binding CloseToTray, Mode=TwoWay}"
+                                  Style="{StaticResource AeronCheckBoxStyle}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Card 2: SQLite Persistence -->
+                <Border Style="{StaticResource AeronCardBorderStyle}" Margin="9,0,0,9">
+                    <StackPanel>
+                        <TextBlock Text="LOCAL SQLITE PERSISTENCE" Style="{StaticResource AeronCardHeadingStyle}" />
+
+                        <TextBlock Text="Health Status" Style="{StaticResource AeronLabelStyle}" />
+                        <TextBlock Text="{Binding DatabaseStatusText}" Margin="0,2,0,10" Style="{StaticResource AeronValueStyle}" />
+
+                        <TextBlock Text="Concurrency &amp; Integrity" Style="{StaticResource AeronLabelStyle}" />
+                        <TextBlock Text="{Binding DatabaseModeText}" Margin="0,2,0,10" Style="{StaticResource AeronValueStyle}" />
+
+                        <TextBlock Text="Migrations" Style="{StaticResource AeronLabelStyle}" />
+                        <TextBlock Text="{Binding SchemaVersionText}" Margin="0,2,0,0" Style="{StaticResource AeronValueStyle}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Card 3: Security & Policy Invariants -->
+                <Border Style="{StaticResource AeronCardBorderStyle}" Margin="0,9,9,0">
+                    <StackPanel>
+                        <TextBlock Text="SECURITY &amp; POLICY INVARIANTS" Style="{StaticResource AeronCardHeadingStyle}" />
+
+                        <TextBlock Text="Standing Guardrails" Style="{StaticResource AeronLabelStyle}" />
+                        <TextBlock Text="{Binding SecurityPolicyText}" Margin="0,2,0,10" Style="{StaticResource AeronValueStyle}" />
+
+                        <TextBlock Text="Structured Diagnostic Logger" Style="{StaticResource AeronLabelStyle}" />
+                        <TextBlock Text="{Binding LoggerStatusText}" Margin="0,2,0,0" Style="{StaticResource AeronValueStyle}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Card 4: Configuration & Storage Isolation -->
+                <Border Style="{StaticResource AeronCardBorderStyle}" Margin="9,9,0,0">
+                    <StackPanel>
+                        <TextBlock Text="ISOLATED CONFIGURATION &amp; STORAGE" Style="{StaticResource AeronCardHeadingStyle}" />
+
+                        <TextBlock Text="Configuration Policy" Style="{StaticResource AeronLabelStyle}" />
+                        <TextBlock Text="{Binding ConfigStatusText}" Margin="0,2,0,10" Style="{StaticResource AeronValueStyle}" />
+
+                        <TextBlock Text="User-Scoped Storage Root" Style="{StaticResource AeronLabelStyle}" />
+                        <TextBlock Text="{Binding AppDataRootPath}"
+                                   Margin="0,2,0,0"
+                                   FontFamily="Consolas"
+                                   FontSize="11.5"
+                                   Foreground="{StaticResource AeronTextPrimaryBrush}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+            </UniformGrid>
+        </ScrollViewer>
+
+        <!-- Footer Status Bar -->
+        <Border Grid.Row="3"
+                Background="{StaticResource AeronHeaderBackgroundBrush}"
+                BorderBrush="{StaticResource AeronBorderBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="24,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0"
+                           Text="{Binding StatusMessage}"
+                           Foreground="{StaticResource AeronTextSecondaryBrush}"
+                           FontFamily="Segoe UI"
+                           FontSize="12"
+                           VerticalAlignment="Center" />
+
+                <TextBlock Grid.Column="1"
+                           Foreground="{StaticResource AeronTextMutedBrush}"
+                           FontFamily="Segoe UI"
+                           FontSize="11.5"
+                           VerticalAlignment="Center">
+                    <Run Text="Checked " />
+                    <Run Text="{Binding LastCheckedDisplay, Mode=OneWay}" />
+                    <Run Text=" · © 2026 Avenox Studio — All Rights Reserved" />
+                </TextBlock>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
