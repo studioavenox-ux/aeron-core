@@ -299,6 +299,83 @@ public sealed class MainWindowViewModelAndTrayStateTests
     }
 
     [Fact]
+    public async Task ViewModel_RepeatedHideRestoreCyclesKeepProcessRunningAndNoDuplicateIcons()
+    {
+        var tempRoot = Path.Combine(Path.GetTempPath(), $"aeron-vm-cycle-{Guid.NewGuid():N}");
+        try
+        {
+            await using var host = AeronFoundationHost.Create(AppPaths.FromRoot(tempRoot));
+            await host.Lifecycle.StartAsync();
+
+            var tray = new FakeSystemTrayService();
+            Assert.True(tray.Initialize("AERON"));
+
+            var hideCount = 0;
+            var restoreCount = 0;
+            var shutdownCount = 0;
+
+            using var vm = new MainWindowViewModel(
+                host.Lifecycle,
+                new FixedOsBaselineHealthService(host.HealthService, simulatedBuild: 26200),
+                host.EventBus,
+                tray,
+                host.Logger);
+
+            vm.HideToTrayRequested += (_, _) => hideCount++;
+            vm.RestoreWindowRequested += (_, _) => restoreCount++;
+            vm.ShutdownApplicationRequested += (_, _) => shutdownCount++;
+
+            await vm.InitializeAsync();
+
+            Assert.True(vm.CloseToTray);
+            Assert.Equal(AppLifecycleState.Running, host.Lifecycle.CurrentState);
+            Assert.True(tray.IsIconRegistered);
+            Assert.Equal(0, tray.DisposeCallCount);
+
+            // Repeated hide/restore cycles must keep the process running and must not
+            // create duplicate tray icons or duplicate windows.
+            for (var i = 0; i < 3; i++)
+            {
+                // Closing (X) minimizes to tray and keeps the process running.
+                var closeAction = vm.HandleWindowClosing();
+                Assert.Equal(WindowCloseAction.MinimizeToTray, closeAction);
+                Assert.True(vm.IsHiddenToTray);
+                Assert.False(vm.IsWindowVisible);
+                Assert.Equal(AppLifecycleState.Running, host.Lifecycle.CurrentState);
+                Assert.True(tray.IsIconRegistered);
+                Assert.Equal(0, tray.DisposeCallCount);
+
+                // Tray Open / double-click restores the existing window (no new instance).
+                tray.RaiseOpen();
+                Assert.False(vm.IsHiddenToTray);
+                Assert.True(vm.IsWindowVisible);
+                Assert.Equal(AppLifecycleState.Running, host.Lifecycle.CurrentState);
+                Assert.True(tray.IsIconRegistered);
+                Assert.Equal(0, tray.DisposeCallCount);
+            }
+
+            Assert.Equal(3, hideCount);
+            Assert.Equal(3, restoreCount);
+
+            // Explicit Exit performs a complete shutdown: tray icon removed, lifecycle stopped.
+            await vm.RequestExitAsync("Unit test exit");
+            Assert.True(vm.IsExplicitExitInProgress);
+            Assert.False(tray.IsIconRegistered);
+            Assert.Equal(1, tray.DisposeCallCount);
+            Assert.Equal(AppLifecycleState.Stopped, host.Lifecycle.CurrentState);
+            Assert.Equal(1, shutdownCount);
+            Assert.Equal(WindowCloseAction.AllowShutdown, vm.HandleWindowClosing());
+        }
+        finally
+        {
+            if (Directory.Exists(tempRoot))
+            {
+                Directory.Delete(tempRoot, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
     public async Task ViewModel_ConfigurableCloseToTrayAndBelowBaselineDetection_WorkCorrectly()
     {
         var tempRoot = Path.Combine(Path.GetTempPath(), $"aeron-vm-cfg-{Guid.NewGuid():N}");
