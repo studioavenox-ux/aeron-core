@@ -29,7 +29,7 @@ Status vocabulary used strictly across all AERON records:
 
 ---
 
-## 2. Approved Milestone 1 Decisions (`CONFIRMED` — 2026-11-17)
+## 2. Approved Milestone 1 Decisions (`CONFIRMED` — 2026-11-17 and 2026-11-19)
 
 | ID | Decision | Status | Record |
 |---|---|---|---|
@@ -38,6 +38,9 @@ Status vocabulary used strictly across all AERON records:
 | **D-M1-03** | Closing the main window (`X`) minimizes AERON to the system tray by default (`Window.CloseToTray = true`) | `CONFIRMED` | [`ADR-TECH-001-DOTNET10-WPF.md`](ADR-TECH-001-DOTNET10-WPF.md) |
 | **D-M1-04** | Private repository policy with Proprietary — All Rights Reserved, Avenox Studio designation | `CONFIRMED` | [`LICENSE`](../../LICENSE) |
 | **D-M1-05** | Explicit Milestone 1 `BUILD` authorization on branch `arena/8ed7a07b-aeron-core` submitted via reviewable PR to `main` | `CONFIRMED` | [`../milestones/M1-FOUNDATION.md`](../milestones/M1-FOUNDATION.md) |
+| **D-M1-06** | Owner accepts the approximately 280 MB Working Set deviation for M1 closure only; the original M1 target of ≤120 MB is preserved; the performance target is not achieved and must not be claimed as achieved; memory profiling and optimization remain future work; this acceptance does not extend to M2 or later milestones | `CONFIRMED` | Owner approval (source; decision date 2026-11-19) |
+
+> **D-M1-06 source:** Owner approval, decision date 2026-11-19. No signature or external record reference was supplied.
 
 ---
 

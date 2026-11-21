@@ -212,7 +212,7 @@ public sealed class RedactingLogger : IAeronLogger
 
                     var key = _redactionFilter.Redact(pair.Key);
                     var value = RedactionFilter.IsSensitiveKeyName(pair.Key)
-                        ? RedactionFilter.RedactedPlaceholder
+                        ? _redactionFilter.Redact(RedactionFilter.RedactedPlaceholder)
                         : _redactionFilter.Redact(pair.Value);
 
                     writer.WriteString(key, value);

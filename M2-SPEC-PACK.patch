@@ -1,0 +1,1776 @@
+diff --git a/docs/governance/DECISION_LEDGER.md b/docs/governance/DECISION_LEDGER.md
+index 0f10c9e..be7efb3 100644
+--- a/docs/governance/DECISION_LEDGER.md
++++ b/docs/governance/DECISION_LEDGER.md
+@@ -29,7 +29,7 @@ Status vocabulary used strictly across all AERON records:
+ 
+ ---
+ 
+-## 2. Approved Milestone 1 Decisions (`CONFIRMED` — 2026-11-17)
++## 2. Approved Milestone 1 Decisions (`CONFIRMED` — 2026-11-17 and 2026-11-19)
+ 
+ | ID | Decision | Status | Record |
+ |---|---|---|---|
+@@ -38,6 +38,9 @@ Status vocabulary used strictly across all AERON records:
+ | **D-M1-03** | Closing the main window (`X`) minimizes AERON to the system tray by default (`Window.CloseToTray = true`) | `CONFIRMED` | [`ADR-TECH-001-DOTNET10-WPF.md`](ADR-TECH-001-DOTNET10-WPF.md) |
+ | **D-M1-04** | Private repository policy with Proprietary — All Rights Reserved, Avenox Studio designation | `CONFIRMED` | [`LICENSE`](../../LICENSE) |
+ | **D-M1-05** | Explicit Milestone 1 `BUILD` authorization on branch `arena/8ed7a07b-aeron-core` submitted via reviewable PR to `main` | `CONFIRMED` | [`../milestones/M1-FOUNDATION.md`](../milestones/M1-FOUNDATION.md) |
++| **D-M1-06** | Owner accepts the approximately 280 MB Working Set deviation for M1 closure only; the original M1 target of ≤120 MB is preserved; the performance target is not achieved and must not be claimed as achieved; memory profiling and optimization remain future work; this acceptance does not extend to M2 or later milestones | `CONFIRMED` | Owner approval (source; decision date 2026-11-19) |
++
++> **D-M1-06 source:** Owner approval, decision date 2026-11-19. No signature or external record reference was supplied.
+ 
+ ---
+ 
+diff --git a/docs/milestones/M2-PREPARATION.md b/docs/milestones/M2-PREPARATION.md
+new file mode 100644
+index 0000000..8bcb52e
+--- /dev/null
++++ b/docs/milestones/M2-PREPARATION.md
+@@ -0,0 +1,281 @@
++# AERON — M1 Finalization & M2 Preparation
++
++> Status: `PROPOSED / PREPARATION ONLY`  
++> Scope: Governance closeout preparation, canonical-specification recovery, and M2 architecture planning.  
++> Implementation status: `NOT STARTED`. This document is not an M2 specification, does not supply missing canonical text, and does not authorize M2 development.
++
++## 0. Scope, authority and workspace actions
++
++- Current session branch: `arena/e01239ac-aeron-core`, based on `24d0804b445b429909dd16068da7e00cccc603a0`.
++- PR #3 remains `OPEN`, `MERGEABLE`, `CLEAN`, head `857b3203fea13239c397113298e8b41b1dc67f93`, with `reviewDecision=""`.
++- CI run `44538313577` is `SUCCESS` with 48/48 tests.
++- Owner retains merge, review, release/tag, evidence-archive, and M2 implementation authority.
++- Workspace actions taken on the authorized branch only:
++  - `docs/governance/DECISION_LEDGER.md` modified locally to record `D-M1-06` as `CONFIRMED`.
++  - This preparation report created.
++  - No commit, no push, no PR merge, no GitHub approval, no tag/release, no application-source change, no test change, no M2 implementation, and no OmniRoute modification.
++- The authoritative M1 verification runbook remains on PR #3 head. The ledger patch below is prepared on the session branch; the Owner must decide how/whether to apply it to the authoritative PR branch or post-merge `main`.
++
++---
++
++## 1. Updated Decision Ledger patch
++
++The patch below is `git apply`-ready. It adds `D-M1-06` to the approved M1 decisions as `CONFIRMED`, records the 2026-11-19 Owner decision, records Owner approval as the source, and invents no signature.
++
++```diff
++diff --git a/docs/governance/DECISION_LEDGER.md b/docs/governance/DECISION_LEDGER.md
++index 0f10c9e..be7efb3 100644
++--- a/docs/governance/DECISION_LEDGER.md
+++++ b/docs/governance/DECISION_LEDGER.md
++@@ -29,7 +29,7 @@ Status vocabulary used strictly across all AERON records:
++ 
++ ---
++ 
++-## 2. Approved Milestone 1 Decisions (`CONFIRMED` — 2026-11-17)
+++## 2. Approved Milestone 1 Decisions (`CONFIRMED` — 2026-11-17 and 2026-11-19)
++ 
++ | ID | Decision | Status | Record |
++ |---|---|---|---|
++@@ -38,6 +38,9 @@ Status vocabulary used strictly across all AERON records:
++ | **D-M1-03** | Closing the main window (`X`) minimizes AERON to the system tray by default (`Window.CloseToTray = true`) | `CONFIRMED` | [`ADR-TECH-001-DOTNET10-WPF.md`](ADR-TECH-001-DOTNET10-WPF.md) |
++ | **D-M1-04** | Private repository policy with Proprietary — All Rights Reserved, Avenox Studio designation | `CONFIRMED` | [`LICENSE`](../../LICENSE) |
++ | **D-M1-05** | Explicit Milestone 1 `BUILD` authorization on branch `arena/8ed7a07b-aeron-core` submitted via reviewable PR to `main` | `CONFIRMED` | [`../milestones/M1-FOUNDATION.md`](../milestones/M1-FOUNDATION.md) |
+++| **D-M1-06** | Owner accepts the approximately 280 MB Working Set deviation for M1 closure only; the original M1 target of ≤120 MB is preserved; the performance target is not achieved and must not be claimed as achieved; memory profiling and optimization remain future work; this acceptance does not extend to M2 or later milestones | `CONFIRMED` | Owner approval (source; decision date 2026-11-19) |
+++
+++> **D-M1-06 source:** Owner approval, decision date 2026-11-19. No signature or external record reference was supplied.
++ 
++ ---
++ 
++```
++
++Validation: `git diff --check` passed; the patch is the only tracked-file change. The PR-head ledger was byte-identical to the local main-based ledger before this patch, so the target path is the same; the patch was not applied to the prohibited PR branch.
++
++---
++
++## 2. M1 outstanding closeout checklist
++
++`D-M1-06` is now recorded on the current session branch. M1 closeout is still conditional because the following Owner-controlled tasks remain outstanding.
++
++| # | Task | Current state | Required action | Authority |
++|---:|---|---|---|---|
++| 1 | APEX raw evidence preservation | `OUTSTANDING`. Raw APEX evidence is not accessible from the PR tree, CI artifacts, PR comments/reviews, tags/releases, repo workspace, or connected knowledge sources. | Owner chooses a durable, Owner-controlled archive location and supplies raw evidence or certifies retention/non-availability. Recommended primary archive: non-cloud-synced local folder on APEX outside `Documents` and outside any OmniRoute directory, with raw artifacts, SHA-256 checksums, and retention note. Repository content should be limited to a sanitized manifest: no personal filenames, no private `Documents` listings, no secrets/tokens/API keys. | Owner |
++| 2 | Artifact SHA-256 provenance verification | `OUTSTANDING`. APEX-installed executable ProductVersion was reported as `0.1.0+47c86b6d1e8cda25378c170964d54d6e60b6be18`. The suffix maps to a 2026-11-17 PR merge-ref commit, not current PR head `857b320` or current merge ref `19e7892`. Only docs changed afterwards, so the binary may be code-identical, but that is not proven. | Compute and record SHA-256 of the APEX-installed executable and current CI artifact from run `44538313577`; record run ID, artifact name, ProductVersion, PR head, and hash comparison. Do not assert equality until verified. | Owner / authorized Windows operator |
++| 3 | Formal GitHub PR review | `OUTSTANDING`. No formal review/approval exists on PR #3; `reviewDecision=""`; issue/review comments are empty. | Owner or authorized reviewer submits the formal GitHub review. The assistant must not approve the PR. | Owner / reviewer |
++| 4 | PR #3 merge authorization | `OUTSTANDING`. PR #3 is open and mergeable, not merged. | Owner exercises final merge authority after review, evidence, provenance, and release/tag decisions. The assistant must not merge. | Owner |
++| 5 | M1 release/tag preparation | `OUTSTANDING`. No tags or releases exist. | After merge, prepare a private/tag release such as `v0.1.0-m1` with final commit SHA, SHA-256, CI run ID, PR head, artifact provenance, and D-M1-06 reference. No tag/release was created here. | Owner |
++
++Additional standing M1 qualifications still requiring Owner treatment: the three OS-locked skipped files in the final Documents scan remain a permanent qualification unless the Owner confirms otherwise; memory profiling/root-cause/soak work remains separate and `NOT STARTED`; the sanitized evidence-manifest publication requires explicit Owner approval; the three skipped files were not inspected and the comparison is incomplete for them.
++
++---
++
++## 3. Canonical specification recovery report
++
++### 3.1 Search scope
++
++Authorized GitHub repositories enumerated: `studioavenox-ux/aeron-core`, `avenox-website`, `brainrot-arena`, `museum-of-unfinished-days-`, `shadow-protocol`, `the-last-signal`, `veilbreak-`, and `ZOE`. All were public; `ZOE` had no refs in the mirror scan.
++
++GitHub `aeron-core` refs inspected: five branch heads plus two unique PR merge refs, for seven unique commit SHAs:
++
++- `refs/heads/arena/14c8988d-aeron-core` → `1a32b5b399839ca61d102ff33fbccae67a35b76d`
++- `refs/heads/arena/8ed7a07b-aeron-core` and `refs/pull/1/head` → `ffcabbb2c5dc9beb675211b02412b17fa7f8c973`
++- `refs/heads/arena/9c2318d0-aeron-core` → `5ea7e410f70579893be99c66d04b4e01902e5b9d`
++- `refs/heads/fix/m1-tray-lifecycle` and `refs/pull/3/head` → `857b3203fea13239c397113298e8b41b1dc67f93`
++- `refs/heads/main` → `24d0804b445b429909dd16068da7e00cccc603a0`
++- `refs/pull/1/merge` → `90651bdab415b20a8cab3e65327868b9837be105`
++- `refs/pull/3/merge` → `19e7892d0bd709972b6234b9a7af9e35e4c6b910`
++
++Connected knowledge sources searched: Google Drive, Google Docs, Gmail, Google Calendar, and Notion.
++
++### 3.2 Results
++
++- **GitHub direct tree/blob inspection:** all seven unique `aeron-core` refs contain the same six canonical-doc blobs as the local main-based checkout. No alternate canonical body or verbatim historical text was found.
++- **GitHub mirror content scan:** exact canonical identifiers and distinctive governance phrases matched only current `aeron-core` documentation, hygiene script, and architecture tests. The other seven owner repositories had no matches; `ZOE` had no refs.
++- **GitHub code search caveat:** the code-search API returned zero even for a `D-M1-05` control query, so it was treated as unreliable for negative proof; direct mirror and tree scans were used instead.
++- **PR/issue/commit searches:** no issue, PR body, or commit message supplied canonical text. PR #1 body only lists the governance files it added; it does not include canonical clauses.
++- **Gmail:** zero messages for exact `ADR-AUTH` identifiers, `U-8R`/`U-8`/`U-1`, canonical-specification phrases, related attachments, and M2 component names; spam/trash included.
++- **Notion:** zero results for `ADR-AUTH`, `U-8R`, `U-8`, `AERON`, `canonical specification`, and `Security Kernel`.
++- **Google Calendar:** zero events for `ADR-AUTH`, `U-8R`, `AERON`, `canonical specification`, and `Security Kernel`.
++- **Google Drive / Google Docs:** zero exact full-text matches for `ADR-AUTH-001`, `ADR-AUTH-002`, `ADR-AUTH-003`, `U-08R-REPLACEMENT`, and `OwnerAuthorityGuard`; zero matching Google Docs with `ADR-AUTH`; zero recent AERON/ADR/U-8/canonical/evidence-named files; zero shared drives. A broad full-text query returned 100 truncated unrelated JS/JSON source artifacts because generic terms such as `canonical` matched code bundles. An exact `U-8R` full-text query returned two unrelated source/build metadata files from an OmniRoute corpus; extracted text showed proxy/egress JS and `package-lock.json` content, not AERON canonical governance text. No secrets, tokens, API keys, personal filenames, or private `Documents` listings were exposed or recorded.
++- **Conclusion:** no exact canonical specification text was recovered for any requested U/ADR document. All exact canonical texts remain `UNRESOLVED`. Confirmed principles, mandates, and governance rules in the repository placeholders are not canonical text.
++
++### 3.3 Source/version of available placeholder records
++
++No exact canonical specification document was recovered, so there is no recovered canonical source/version to record. The source/version below is for the available placeholder records only.
++
++Version key `V1`: `studioavenox-ux/aeron-core` at base commit `24d0804b445b429909dd16068da7e00cccc603a0` (`2026-11-17T21:40:44+05:30`) and PR #3 head `857b3203fea13239c397113298e8b41b1dc67f93` (`2026-11-19T13:54:32Z`). The six blob SHAs were identical across all seven unique remote refs inspected. Placeholder audit date in the documents: `2026-11-17`.
++
++| Document | Available source/version | Exact canonical text recovered? | Status |
++|---|---|---|---|
++| `U-1` Controlled evolution | `V1`, `docs/governance/U-01-TO-U-07.md`, blob `4598aa24346a09a177311f2ec49a6d40af60e9d8`; core principle `CONFIRMED`, canonical body `UNRESOLVED` | No | `UNRESOLVED` |
++| `U-2` Intelligent adaptive modes | `V1`, same file/blob `4598aa24346a09a177311f2ec49a6d40af60e9d8`; core principle `CONFIRMED`, exact mode catalog/transition rules `UNRESOLVED` | No | `UNRESOLVED` |
++| `U-3` Dynamic prioritization | `V1`, same file/blob; core principle `CONFIRMED`, exact scoring rules `UNRESOLVED` | No | `UNRESOLVED` |
++| `U-4` Adaptive scheduling | `V1`, same file/blob; core principle `CONFIRMED`, exact scheduling rules `UNRESOLVED` | No | `UNRESOLVED` |
++| `U-5` Adaptive notifications | `V1`, same file/blob; core principle `CONFIRMED`, exact notification thresholds `UNRESOLVED` | No | `UNRESOLVED` |
++| `U-6` Human-like agent team / avatars / autonomy / communication / personalities | `V1`, same file/blob; core principle `CONFIRMED`, exact roster/personality/avatar spec `UNRESOLVED` | No | `UNRESOLVED` |
++| `U-7` Complete contextual memory | `V1`, same file/blob; core principle `CONFIRMED`, exact retention/retrieval rules `UNRESOLVED` | No | `UNRESOLVED` |
++| Original `U-8` | `V1`, `docs/governance/U-08-ORIGINAL.md`, blob `5f72b9c924a7ac09598893ed55a34268de3a426e`; recovery status `UNRESOLVED` | No | `UNRESOLVED` |
++| Replacement `U-8R` | `V1`, `docs/governance/U-08R-REPLACEMENT.md`, blob `422a0c53e72a7b0044e48e5beb0c494c0599a0de`; recovery status `UNRESOLVED` | No | `UNRESOLVED` |
++| `ADR-AUTH-001` | `V1`, `docs/governance/ADR-AUTH-001.md`, blob `aa7e8a511ff8e9ee84b10017ca8def6925a9b461`; governance mandate `CONFIRMED`, verbatim historical text `UNRESOLVED` | No | `UNRESOLVED` |
++| `ADR-AUTH-002` | `V1`, `docs/governance/ADR-AUTH-002.md`, blob `f568793d402e9c9f3a77de759e1d21378a0af437`; permission/gateway separation mandate `CONFIRMED`, verbatim historical text `UNRESOLVED` | No | `UNRESOLVED` |
++| `ADR-AUTH-003` | `V1`, `docs/governance/ADR-AUTH-003.md`, blob `0fc6102e32bfc5b7e77713e829fbdf900fe61dc0`; approval/audit mandate `CONFIRMED`, verbatim historical text `UNRESOLVED` | No | `UNRESOLVED` |
++
++Original `U-8` and replacement `U-8R` are preserved strictly separate. No missing clause was invented.
++
++---
++
++## 4. M2 architecture blueprint
++
++Status: `PROPOSED / NOT STARTED`. This blueprint uses only confirmed repository constraints, the existing modular architecture, and placeholder mandates. It is not canonical ADR/U text. M2 implementation must not begin until all canonical texts are supplied, M1 closeout dependencies are resolved, and the Owner issues explicit M2 `BUILD` authorization.
++
++### 4.1 Architecture preservation and budget
++
++- Preserve the existing unidirectional acyclic dependency graph and target frameworks: `Aeron.Contracts` (`net10.0`, zero dependencies), `Aeron.Security` (`net10.0`), `Aeron.Infrastructure` (`net10.0`), `Aeron.Core` (`net10.0`), `Aeron.Desktop` (`net10.0-windows` WPF `WinExe`), and the future `Aeron.Platform.Windows` module.
++- M2 expands `Aeron.Security` only with the planned security-kernel components; it does not create `Aeron.Gateway`, `Aeron.Memory`, `Aeron.Agents`, or `Aeron.Execution`, and does not start M3 OmniRoute `CLIENT_API` integration.
++- Preserve C# 14 / .NET 10 LTS, WPF native Windows desktop, deterministic builds, `TreatWarningsAsErrors=true`, and Windows 11 25H2 Build 26200 `x64` minimum.
++- Preserve the ₹0 budget: free/OSS tooling and built-in Windows APIs only. No paid APIs, no paid inference fallback, no local LLM runtimes or model-weight downloads, no skill-script execution, no third-party agent framework, and no OmniRoute configuration/data/process modification.
++- Runtime files stay only in current-user-ACL-protected `%LOCALAPPDATA%\Aeron` (`config`, `data`, `data\backups`, `logs`), never in the repository, cloud-synced `Documents`, or OmniRoute directories.
++
++### 4.2 OwnerAuthorityGuard
++
++- Proposed non-bypassable choke point for every consequential action and policy decision.
++- Enforces C-10: Project Owner pause, cancel, revoke, reconfigure, and emergency-stop directives preempt AERON Core and every agent immediately.
++- Enforces ADR-AUTH-001 confirmed mandate: ultimate authority is non-delegable; AERON Core and specialist agents cannot bypass Owner governance.
++- Must fail closed if authority state, policy version, approval binding, or canonical-specification status is unavailable.
++- Must not interpret placeholder mandates as canonical verbatim clauses; exact `ADR-AUTH-001` text remains an Owner-supplied dependency.
++
++### 4.3 Default-deny PolicyDecisionEngine
++
++- Proposed independent, deterministic engine in `Aeron.Security`, separate from AERON Core reasoning and agent reasoning.
++- Every action request is normalized into an explicit domain, tier, actor, parameters, data classification, disclosure destination, and policy version.
++- If a rule is absent, ambiguous, expired, unverifiable, or canonical text is unresolved for a policy-finalization dependency, the result is `DENY`.
++- No implicit allow-list inheritance, no paid fallback, no local inference fallback, no dynamic skill script, and no OmniRoute mutation path.
++- All decisions are returned as typed result envelopes with redacted reason codes and are written to the audit ledger.
++
++### 4.4 G1–G4 and L0–L3 authority levels
++
++The current repository constraints define the following domains and tiers. Exact canonical `ADR-AUTH-002` verbatim text remains `UNRESOLVED`; this table is a confirmed-constraint summary, not canonical text.
++
++| Domain / tier | Scope | Policy posture |
++|---|---|---|
++| `G1` Approved Remote Model Inference | Routine inference over an explicitly Owner-approved, zero-cost gateway configuration | No repeated per-message approval prompt, but non-bypassable guards enforce approved provider/model/combo, verified `$0.00`, remote-only routing, pre-wire redaction, disclosure policy, and zero paid/local fallback. Adding/modifying gateways, providers, models, cost rules, or disclosure policies requires explicit Owner approval. M3 only; not implemented in M2. |
++| `G2` External Data Disclosure | Local files, private documents, restricted memory, or host artifacts sent off-device | `Secret` data hard-blocked and redacted. `LocalPrivate`/restricted data requires policy clearance and explicit Owner approval specifying exact source and destination. `RoutineContext` flows only within approved `G1` disclosure policy. |
++| `G3` External Communications | Email, message, chat, invite, comment, webhook, externally visible post | Agents may stage local drafts only; transmission requires explicit per-action, parameter-hashed Owner approval. |
++| `G4` External Account Modifications | External writes, edits, deletes, shares, permission changes, repository mutation, settings | Explicit per-action, parameter-hashed Owner approval. Mutating OmniRoute or enabling paid/billed services is permanently forbidden. |
++| `L0` Isolated AERON Internal State | Operations inside `%LOCALAPPDATA%\Aeron` | Allowed only with current-user Windows ACL protection and audit logging. |
++| `L1` Bounded Safe Local Reads / Drafts | Policy-permitted non-destructive reads and local staging | Allowed with audit logging. |
++| `L2` Consequential Local Actions | Owner file writes/deletes/moves, external process launch, OS-state change, persistent schedule change, controlled-evolution proposal | Mandatory explicit Owner approval before execution; fail closed on denial, expiration, cancellation, or parameter mismatch. |
++| `L3` Forbidden Local Actions | v1 skill-script execution, local LLM execution/model downloads, external `.env`/secret reads, disabling redaction/audit, bypassing Owner authority | Hard-denied in code. |
++
++### 4.5 OwnerApprovalService
++
++- Proposed explicit approval lifecycle for `G2` restricted disclosure, `G3`, `G4`, and `L2`.
++- Before any consequential side effect, it creates a redacted, human-readable approval request, binds it to a stable action-parameter hash, captures policy version and expiry, and waits for an explicit Owner decision.
++- Fail closed on denial, expiration, cancellation, parameter mismatch, policy-version change, missing approval, or Owner preemption.
++- No self-approval, no implied consent, no reuse of approvals across changed parameters, and no external transmission from a draft alone.
++- Exact `ADR-AUTH-003` clauses remain `UNRESOLVED`; the above is a proposed implementation posture derived from confirmed mandates.
++
++### 4.6 Parameter-hashed approval requests
++
++- Canonicalize action parameters into a stable, versioned, redacted representation; exclude raw secrets entirely.
++- Compute a SHA-256 parameter hash over that canonical representation and display/store the hash with the approval request.
++- Recompute the hash immediately before execution; any mismatch fails closed without side effects.
++- Store approval decisions, expiry, cancellation/preemption state, and policy version in `AuditLedger`; never store raw credentials or unredacted secret-bearing payloads in logs, prompts, memory, or approval records.
++- The hash is an integrity binding, not a signature. No Owner signature is invented or required by this preparation report.
++
++### 4.7 Hash-chained AuditLedger
++
++- Proposed append-only, tamper-evident ledger in the expanded `Aeron.Security` / existing SQLite WAL infrastructure.
++- Each entry contains sequence, UTC timestamp, actor, request classification, policy version, decision, approval hash, previous-entry hash, entry hash, redacted outcome, and error code.
++- Startup and CI verification recompute the chain; any missing, reordered, altered, or unredacted-secret entry fails closed.
++- Store under `%LOCALAPPDATA%\Aeron\data` with current-user ACLs and existing transactional migration/checksum discipline.
++- All lifecycle, policy, approval, denial, expiration, cancellation, preemption, and action events pass through secret-redacting logging before persistence.
++
++### 4.8 DPAPI / Windows Credential Manager vault
++
++- Proposed future `Aeron.Platform.Windows` adapter, matching the existing BLUEPRINT module plan.
++- Use built-in Windows DPAPI current-user protection and Windows Credential Manager for secret-bearing configuration, with no inline credentials in JSON config.
++- Vault reads and writes remain local-only; no cloud sync, no OmniRoute secret read, no raw secret in logs/prompts/memory/audit, and no external disclosure without `G2` policy clearance and Owner approval.
++- Use ₹0 built-in OS APIs and free/OSS libraries only. No paid secret manager, no local model, no skill script, and no OmniRoute modification.
++- `ConfigPolicyValidator` and `RedactionFilter` remain fail-closed gates for forbidden credential properties and secret-like values.
++
++### 4.9 Secret redaction and privacy protection
++
++- Reuse and extend existing `Aeron.Security.RedactionFilter`, `RedactingLogger`, and `ConfigPolicyValidator`; do not replace them with agent-side heuristics.
++- Unconditionally redact logs, structured properties, nested exceptions, SQLite journal messages, audit entries, approval UI, and test diagnostics.
++- Secrets are hard-blocked from `G2`; `LocalPrivate`/restricted data requires exact source/destination approval; `RoutineContext` only flows inside approved `G1` policy.
++- No personal filenames or private `Documents` listings in repository documentation, evidence manifests, logs, or CI output.
++- Preserve C-12: zero secret exposure in configs, logs, prompts, or memory; runtime storage only in user-ACL-protected `%LOCALAPPDATA%\Aeron`.
++
++### 4.10 Windows security testing and CI
++
++- Extend the existing Windows GitHub Actions CI and architecture tests only after explicit M2 authorization.
++- Proposed test groups: default-deny matrix; every `G1`–`G4`/`L0`–`L3` boundary; approval denial/expiry/cancellation/parameter mismatch; Owner preemption; audit-chain tamper detection; DPAPI/Credential Manager round-trip with synthetic secrets; redaction across logs/errors/structured properties/nested exceptions; `Documents`/OmniRoute path rejection; zero inline credentials; zero banned local-model weights or skill scripts; no premature M3/M4 modules; zero warnings under `TreatWarningsAsErrors=true`.
++- Windows-specific tests require a Windows runner or APEX. No tests, builds, or Windows security checks were run in this Linux sandbox.
++- CI must not require paid APIs, local model inference, skill-script execution, or OmniRoute changes. Test artifacts may contain synthetic secret strings only after redaction assertions prove they are not emitted.
++
++---
++
++## 5. M2 dependency matrix
++
++Legend: `RECOVERED` means an exact canonical document with source/version is available. `PARTIAL` means only confirmed principles/mandates or placeholder records exist. `UNRESOLVED` means the exact canonical text is unavailable and must be supplied by the Owner. All rows below are gates; no M2 implementation is authorized.
++
++| Dependency | Exact canonical text recovered? | Current source/version | Status | Owner must supply | M2 gate |
++|---|---|---|---|---|---|
++| `U-1` | No | `V1`, `U-01-TO-U-07.md`, blob `4598aa24…` | `UNRESOLVED` | Exact verbatim `U-1` canonical body plus source/version/date | Blocks controlled-evolution policy finalization |
++| `U-2` | No | `V1`, same blob | `UNRESOLVED` | Exact verbatim `U-2` canonical body plus mode catalog/transition rules and source/version | Blocks mode-related policy parameters |
++| `U-3` | No | `V1`, same blob | `UNRESOLVED` | Exact verbatim `U-3` canonical body plus scoring rules and source/version | Blocks prioritization policy parameters |
++| `U-4` | No | `V1`, same blob | `UNRESOLVED` | Exact verbatim `U-4` canonical body plus scheduling rules and source/version | Blocks schedule/`L2` policy details |
++| `U-5` | No | `V1`, same blob | `UNRESOLVED` | Exact verbatim `U-5` canonical body plus notification thresholds and source/version | Blocks notification/approval escalation details |
++| `U-6` | No | `V1`, same blob | `UNRESOLVED` | Exact verbatim `U-6` canonical body plus roster/personality/avatar spec and source/version | Blocks agent-boundary policy details |
++| `U-7` | No | `V1`, same blob | `UNRESOLVED` | Exact verbatim `U-7` canonical body plus retention/retrieval/inspection/edit/delete rules and source/version | Blocks privacy/audit retention policy |
++| Original `U-8` | No | `V1`, `U-08-ORIGINAL.md`, blob `5f72b9c9…` | `UNRESOLVED` | Exact verbatim original `U-8`, kept separate from `U-8R`, with source/version | Blocks M2 policy finalization |
++| Replacement `U-8R` | No | `V1`, `U-08R-REPLACEMENT.md`, blob `422a0c53…` | `UNRESOLVED` | Exact verbatim replacement `U-8R`, kept separate from original `U-8`, with source/version | Blocks M2 policy finalization |
++| `ADR-AUTH-001` | No | `V1`, `ADR-AUTH-001.md`, blob `aa7e8a51…` | `UNRESOLVED` verbatim clauses; mandate `CONFIRMED` | Exact historical clauses/source/version | Blocks OwnerAuthorityGuard finalization |
++| `ADR-AUTH-002` | No | `V1`, `ADR-AUTH-002.md`, blob `f568793d…` | `UNRESOLVED` verbatim clauses; separation mandate `CONFIRMED` | Exact historical clauses/source/version | Blocks `G1`–`G4`/`L0`–`L3` policy finalization |
++| `ADR-AUTH-003` | No | `V1`, `ADR-AUTH-003.md`, blob `0fc6102e…` | `UNRESOLVED` verbatim clauses; approval/audit mandate `CONFIRMED` | Exact historical clauses/source/version | Blocks approval/audit finalization |
++| M1 closeout: raw evidence, SHA-256 provenance, formal review, merge, release/tag | N/A | PR #3 `857b320`, CI `44538313577` | `OUTSTANDING` | Owner decisions/evidence/review/merge/tag | Prerequisite before M2 `BUILD` |
++| `D-M1-06` application to authoritative branch | N/A | Patch prepared on session branch | `PREPARED` | Owner decides where/when to apply | Governance consistency gate |
++| Exact M2 implementation authorization | N/A | Current user instruction is preparation only | `NOT GIVEN` | Explicit Owner `BUILD` authorization for M2 | Hard gate |
++| Windows CI / APEX security-test authorization | N/A | Linux sandbox; no Windows runtime here | `NOT STARTED` | Owner-approved Windows test environment and CI scope | Hard gate before test implementation |
++| M3 OmniRoute `CLIENT_API` allowlist | N/A | BLUEPRINT Pre-M3 item | `OUT OF M2 SCOPE` | Approved ₹0 providers/models/combos only before M3; no OmniRoute modification | Boundary, not M2 dependency |
++
++M2 readiness: `NOT READY FOR IMPLEMENTATION`. Preparation is complete; exact canonical text recovery is not complete.
++
++---
++
++## 6. Proposed M2 milestone stages
++
++All stages are `PROPOSED / NOT STARTED`. No stage below has been implemented, committed, pushed, built, or tested.
++
++| Stage | Name | Scope | Gate / exit criteria |
++|---|---|---|---|
++| M2.0 | Governance recovery & authorization gate | Owner supplies all 12 exact canonical texts with source/version; resolves M1 closeout checklist; applies/accepts `D-M1-06` on authoritative branch; formal PR review, merge, and release/tag decisions; explicit M2 `BUILD` authorization | All canonical texts `RECOVERED`; M1 closeout accepted; Owner authorization recorded. No code changes before this gate. |
++| M2.1 | Contracts & policy model | Typed request, decision, data classification, authority-level, approval, audit, and redaction contracts in existing dependency order | Architecture tests confirm no new external dependencies, no premature modules, no secrets in contracts. |
++| M2.2 | Default-deny PolicyDecisionEngine + OwnerAuthorityGuard | Deterministic `G1`–`G4`/`L0`–`L3` matrix, Owner preemption, fail-closed policy/version checks | Unit tests cover allow/deny/hard-deny, ambiguity, missing canonical dependency, and preemption. |
++| M2.3 | OwnerApprovalService + parameter hashing | Explicit per-action approval lifecycle for `G2`/`G3`/`G4`/`L2`; SHA-256 parameter binding; expiry/cancel/mismatch handling | Tests prove no side effect on denial, expiration, cancellation, mismatch, or policy-version change. |
++| M2.4 | Hash-chained AuditLedger | Append-only chain, previous/current hash, policy/approval/outcome records, redaction before persistence, SQLite WAL migration | Startup/CI chain verification and tamper-detection tests pass; no secret leakage. |
++| M2.5 | DPAPI / Windows Credential Manager vault | Future `Aeron.Platform.Windows` adapter; current-user DPAPI/Credential Manager; no inline credentials; local-only storage | Windows tests prove round-trip, ACL/path isolation, `Documents`/OmniRoute rejection, and redaction. |
++| M2.6 | Windows security CI & architecture enforcement | Extend Windows CI, architecture guard, hygiene scan, synthetic-secret tests, zero-warning build | Windows CI green; 0 warnings/errors; no banned weights/frameworks/skill scripts/paid services/OmniRoute changes. |
++| M2.7 | M2 acceptance evidence & Owner review | APEX/Windows interactive verification, evidence manifest, SHA-256/run/artifact provenance, formal review, M2 tag/release preparation | Owner acceptance; M2 frozen; M3 remains unstarted and requires approved ₹0 gateway allowlist. |
++
++---
++
++## 7. Remaining Owner decisions
++
++1. Decide how/whether to apply the `D-M1-06` patch to the authoritative PR branch or post-merge `main`; no signature is needed.
++2. Choose/authorize the APEX raw-evidence archive and supply raw evidence, or certify retention/non-availability.
++3. Approve publication of a sanitized evidence manifest; explicitly confirm that no personal filenames, private `Documents` listings, secrets, tokens, or API keys are included.
++4. Confirm the three OS-locked skipped files remain a permanent qualification to AT-M1-APEX-05, and that those files were not inspected.
++5. Resolve artifact provenance by SHA-256 comparison and record run ID, ProductVersion, PR head, and artifact hash.
++6. Approve the memory profiling/root-cause/optimization follow-up scope and priority, without starting that work now.
++7. Submit or authorize the formal GitHub PR #3 review; assistant must not approve.
++8. Exercise final PR #3 merge authority; assistant must not merge. Decide the disposition of redundant PR #1.
++9. Approve M1 release/tag naming, privacy level, artifact retention, and provenance contents; no tag/release exists yet.
++10. Supply exact verbatim canonical texts with source/version for `U-1`–`U-7`, original `U-8`, replacement `U-8R`, and `ADR-AUTH-001`–`003`; keep original `U-8` and replacement `U-8R` separate.
++11. Approve/reject the proposed M2 blueprint, stage order, vault mechanism, approval-binding design, audit-retention policy, Windows CI scope, and privacy/redaction rules.
++12. Issue explicit M2 `BUILD` authorization before any implementation. Confirm that M2 remains ₹0, remote-inference-only, with no local model inference, no paid API fallback, no skill-script execution, and no OmniRoute modification.
++13. Keep M3 OmniRoute `CLIENT_API` and the approved ₹0 gateway allowlist outside M2; approve them separately before M3.
++
++---
++
++**Final status:** M2 PREPARATION — NOT IMPLEMENTATION. Wait for Owner authorization before starting M2 development.
+diff --git a/docs/specifications/M2/ADR-AUTH-001.md b/docs/specifications/M2/ADR-AUTH-001.md
+new file mode 100644
+index 0000000..73a726c
+--- /dev/null
++++ b/docs/specifications/M2/ADR-AUTH-001.md
+@@ -0,0 +1,65 @@
++# ADR-AUTH-001 — Core Governance & Ultimate Project Owner Authority (Part 1)
++
++> Owner-review state: `CONFIRMED` mandate / `UNRESOLVED` verbatim historical text / `PROPOSED` reconstruction.  
++> Classification: `PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW` for all newly drafted wording.  
++> This document is **not** an original historical ADR.
++
++## 1. Source and version
++
++- Placeholder source: `docs/governance/ADR-AUTH-001.md`, blob `aa7e8a511ff8e9ee84b10017ca8def6925a9b461`
++- Version: `studioavenox-ux/aeron-core` at base commit `24d0804b445b429909dd16068da7e00cccc603a0` and PR #3 head `857b3203fea13239c397113298e8b41b1dc67f93`; blob SHAs identical across all seven unique remote refs inspected.
++- Recovered contextual source: `AVENOX Ecosystem Master Blueprint (Working Copy)`, Google Docs version `8`, document version `1.0 | 18 November 2026`; DOCX version `4`, same document version.
++
++## 2. Recovered / confirmed historical baseline
++
++Exact repository status:
++
++> **Status:** `CONFIRMED` (governance mandate) / `UNRESOLVED` (canonical verbatim historical text)
++
++Exact confirmed rules recovered:
++
++1. The **Project Owner** holds absolute, non-delegable ultimate authority over AERON, all policies, all data, all permissions, and all agents.
++2. **AERON Core** serves as central intelligence and team leader strictly within boundaries established by the Project Owner.
++3. **Specialist Agents** act as bounded delegates coordinated by AERON Core and cannot bypass Core oversight or Project Owner governance.
++4. Project Owner pause, cancel, revoke, reconfigure, and emergency-stop directives immediately preempt every subsystem.
++
++Exact unrecovered-text note:
++
++> **Unrecovered Historical Text Note (`UNRESOLVED`):** Exact historical clauses from the original external `ADR-AUTH-001` record were absent from connected sources on `2026-11-17` and will be appended verbatim prior to Milestone 2 policy finalization without fabrication.
++
++Exact recovered AVENOX/AOS context relevant to authority (`RECOVERED` context only):
++
++> **Founder (You)** — Founder and final authority
++
++> **Operating principle:** each AI system has a distinct responsibility and works within defined permissions. The Founder retains final authority. External actions, spending, publishing, account changes, legal commitments and other consequential decisions require explicit human approval.
++
++Boundary: the AVENOX ecosystem blueprint is broader context, not an AERON ADR-AUTH canonical clause.
++
++## 3. PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW
++
++- OwnerAuthorityGuard is proposed as the non-bypassable enforcement layer for ultimate Owner authority.
++- Authority inheritance across agents must be bounded: no agent may exceed the Owner limits or delegate Owner authority.
++- Conflicting instructions resolve in this order: Owner preemption, explicit policy, default deny.
++- Pause/cancel/revoke/reconfigure/emergency-stop must invalidate pending approvals and deny new consequential actions.
++- Fail closed if Owner authority state, policy version, or canonical-specification status is unavailable.
++
++## 4. Unresolved questions
++
++- Exact historical ADR-AUTH-001 clauses and source/version.
++- Whether any additional emergency-stop semantics exist beyond immediate preemption.
++- Whether authorization inheritance across agents has a distinct historical formulation.
++
++## 5. Dependencies with other specifications
++
++- `U-06.md` for multi-agent boundaries.
++- `U-08R.md` for U-8R `Authority policy = C` without inferred meaning.
++- `ADR-AUTH-002.md` and `ADR-AUTH-003.md`.
++- `SECURITY-ARCHITECTURE.md` for OwnerAuthorityGuard.
++
++## 6. Status
++
++- Confirmed mandate/rules: `CONFIRMED`.
++- Exact verbatim historical clauses: `UNRESOLVED`.
++- Recovered broader authority context: `RECOVERED` context only.
++- Newly drafted reconstruction: `PROPOSED`.
++- Implementation: `NOT AUTHORIZED`.
+diff --git a/docs/specifications/M2/ADR-AUTH-002.md b/docs/specifications/M2/ADR-AUTH-002.md
+new file mode 100644
+index 0000000..e31c62c
+--- /dev/null
++++ b/docs/specifications/M2/ADR-AUTH-002.md
+@@ -0,0 +1,68 @@
++# ADR-AUTH-002 — Permission Boundaries & Separated External Authorization (Part 2)
++
++> Owner-review state: `CONFIRMED` mandate / `UNRESOLVED` verbatim historical text / `PROPOSED` reconstruction.  
++> Classification: `PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW` for all newly drafted wording.  
++> This document is **not** an original historical ADR.
++
++## 1. Source and version
++
++- Placeholder source: `docs/governance/ADR-AUTH-002.md`, blob `f568793d402e9c9f3a77de759e1d21378a0af437`
++- Version: `studioavenox-ux/aeron-core` at base commit `24d0804b445b429909dd16068da7e00cccc603a0` and PR #3 head `857b3203fea13239c397113298e8b41b1dc67f93`; blob SHAs identical across all seven unique remote refs inspected.
++- Recovered contextual source: `AVENOX Ecosystem Master Blueprint (Working Copy)`, Google Docs version `8`, document version `1.0 | 18 November 2026`; DOCX version `4`, same document version.
++
++## 2. Recovered / confirmed historical baseline
++
++Exact repository status:
++
++> **Status:** `CONFIRMED` (permission & gateway separation mandate) / `UNRESOLVED` (canonical verbatim historical text)
++
++Exact confirmed rules recovered:
++
++1. AERON enforces an independent, default-deny permission engine separate from AERON Core and agent reasoning.
++2. External governance strictly separates four distinct domains:
++   - **`G1` Approved Remote Model Inference:** Routine requests over an Owner-approved, zero-cost OmniRoute gateway configuration execute without per-message approval prompts while enforcing approved provider, model, zero-cost, remote-only, redaction, and data-disclosure policies, with **zero paid or local inference fallback**.
++   - **`G2` External Data Disclosure:** Governed by data classification and explicit Owner approval before disclosing local/restricted data off-device; secrets are strictly blocked and redacted.
++   - **`G3` External Communications:** Mandatory explicit per-action Owner approval before sending any external communication.
++   - **`G4` External Account Modifications:** Mandatory explicit per-action Owner approval before altering external accounts/services; mutating OmniRoute or enabling paid charges is permanently prohibited.
++3. v1 strictly prohibits dynamic skill-script execution.
++
++Exact unrecovered-text note:
++
++> **Unrecovered Historical Text Note (`UNRESOLVED`):** Exact historical clauses from the original external `ADR-AUTH-002` document will be inserted verbatim when provided by the Project Owner prior to Milestone 2.
++
++Exact recovered AVENOX/AOS context relevant to authority (`RECOVERED` context only):
++
++> **Founder (You)** — Founder and final authority
++
++> **Operating principle:** each AI system has a distinct responsibility and works within defined permissions. The Founder retains final authority. External actions, spending, publishing, account changes, legal commitments and other consequential decisions require explicit human approval.
++
++Boundary: the AVENOX ecosystem blueprint is broader context, not an AERON ADR-AUTH canonical clause.
++
++## 3. PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW
++
++- PolicyDecisionEngine is proposed as deterministic and default-deny, independent of AERON Core and agent reasoning.
++- M2 defines `G1`–`G4` and `L0`–`L3` as policy inputs but does not implement M3 OmniRoute `CLIENT_API` integration.
++- Action classification, data classification, destination validation, and policy versioning are mandatory before any allow decision.
++- Ambiguous or incomplete requests are denied with redacted policy-evaluation evidence.
++- No paid/local inference fallback, skill-script execution, or OmniRoute mutation is permitted.
++
++## 4. Unresolved questions
++
++- Exact historical ADR-AUTH-002 clauses and source/version.
++- Exact canonical action/data classification taxonomies.
++- Exact destination-validation rules and policy-version format.
++
++## 5. Dependencies with other specifications
++
++- `ADR-AUTH-001.md`, `ADR-AUTH-003.md`.
++- `U-07.md` for contextual-memory disclosure classification.
++- `U-08R.md` for U-8R letter tokens without inferred meanings.
++- `SECURITY-ARCHITECTURE.md` and `M2-DEPENDENCY-GRAPH.md`.
++
++## 6. Status
++
++- Confirmed mandate/rules: `CONFIRMED`.
++- Exact verbatim historical clauses: `UNRESOLVED`.
++- Recovered broader authority context: `RECOVERED` context only.
++- Newly drafted reconstruction: `PROPOSED`.
++- Implementation: `NOT AUTHORIZED`.
+diff --git a/docs/specifications/M2/ADR-AUTH-003.md b/docs/specifications/M2/ADR-AUTH-003.md
+new file mode 100644
+index 0000000..2384198
+--- /dev/null
++++ b/docs/specifications/M2/ADR-AUTH-003.md
+@@ -0,0 +1,63 @@
++# ADR-AUTH-003 — Consequential Approval, Preemption & Audit Integrity (Part 3)
++
++> Owner-review state: `CONFIRMED` mandate / `UNRESOLVED` verbatim historical text / `PROPOSED` reconstruction.  
++> Classification: `PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW` for all newly drafted wording.  
++> This document is **not** an original historical ADR.
++
++## 1. Source and version
++
++- Placeholder source: `docs/governance/ADR-AUTH-003.md`, blob `0fc6102e32bfc5b7e77713e829fbdf900fe61dc0`
++- Version: `studioavenox-ux/aeron-core` at base commit `24d0804b445b429909dd16068da7e00cccc603a0` and PR #3 head `857b3203fea13239c397113298e8b41b1dc67f93`; blob SHAs identical across all seven unique remote refs inspected.
++- Recovered contextual source: `AVENOX Ecosystem Master Blueprint (Working Copy)`, Google Docs version `8`, document version `1.0 | 18 November 2026`; DOCX version `4`, same document version.
++
++## 2. Recovered / confirmed historical baseline
++
++Exact repository status:
++
++> **Status:** `CONFIRMED` (approval & audit mandate) / `UNRESOLVED` (canonical verbatim historical text)
++
++Exact confirmed rules recovered:
++
++1. All consequential actions (`G2` restricted disclosure, `G3` external communications, `G4` external account modifications, and `L2` consequential local/schedule/evolution operations) require explicit Project Owner approval before execution.
++2. Approval decisions are fail-closed on denial, expiration, cancellation, or parameter mismatch (implemented in Milestone 2).
++3. All lifecycle, policy, and action events must be recorded through secret-redacting logging and tamper-evident audit trails, with zero exposure of passwords, API keys, or credentials.
++
++Exact unrecovered-text note:
++
++> **Unrecovered Historical Text Note (`UNRESOLVED`):** Exact historical clauses from the original external `ADR-AUTH-003` document will be inserted verbatim when provided by the Project Owner prior to Milestone 2.
++
++Exact recovered AVENOX/AOS context relevant to authority (`RECOVERED` context only):
++
++> **Founder (You)** — Founder and final authority
++
++> **Operating principle:** each AI system has a distinct responsibility and works within defined permissions. The Founder retains final authority. External actions, spending, publishing, account changes, legal commitments and other consequential decisions require explicit human approval.
++
++Boundary: the AVENOX ecosystem blueprint is broader context, not an AERON ADR-AUTH canonical clause.
++
++## 3. PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW
++
++- OwnerApprovalService is proposed for explicit, per-action approval requests bound to a SHA-256 parameter hash.
++- Approval must fail closed on denial, expiration, cancellation, parameter mismatch, policy-version change, or Owner preemption, and must revalidate immediately before execution.
++- Self-approval by AERON Core, agents, or background services is prohibited.
++- AuditLedger is proposed as append-only, hash-chained, SQLite-WAL-backed, redacted, startup-verified, and tamper-detecting.
++- Recovery from audit failure must deny new sensitive operations and preserve the last verified chain head.
++
++## 4. Unresolved questions
++
++- Exact historical ADR-AUTH-003 clauses and source/version.
++- Exact canonical approval expiry, cancellation, and recovery semantics.
++- Whether any additional tamper-evidence or Owner inspection/deletion semantics exist.
++
++## 5. Dependencies with other specifications
++
++- `ADR-AUTH-001.md`, `ADR-AUTH-002.md`.
++- `U-01.md`, `U-04.md`, `U-07.md`.
++- `SECURITY-ARCHITECTURE.md`, `SECURITY-THREAT-MODEL.md`, `M2-ACCEPTANCE-CRITERIA.md`.
++
++## 6. Status
++
++- Confirmed mandate/rules: `CONFIRMED`.
++- Exact verbatim historical clauses: `UNRESOLVED`.
++- Recovered broader authority context: `RECOVERED` context only.
++- Newly drafted reconstruction: `PROPOSED`.
++- Implementation: `NOT AUTHORIZED`.
+diff --git a/docs/specifications/M2/CONTRADICTION-REPORT.md b/docs/specifications/M2/CONTRADICTION-REPORT.md
+new file mode 100644
+index 0000000..69dd024
+--- /dev/null
++++ b/docs/specifications/M2/CONTRADICTION-REPORT.md
+@@ -0,0 +1,22 @@
++# Contradiction Report
++
++> Purpose: identify apparent tensions, avoid silent resolution, and define boundaries.  
++> Status: `PROPOSED` reconciliations; `UNRESOLVED` where Owner input is genuinely required.
++
++| ID | Apparent tension | Evidence | Current treatment | Required Owner input |
++|---|---|---|---|---|
++| `CON-01` | U-8R `Backup storage = Google Drive` vs C-12 runtime storage outside cloud-synced `Documents` and prior M1 evidence-archive recommendation for a local Owner-controlled folder with cloud mirror only after `G2`/`G4` approval. | Owner request v1; `CONSTRAINTS.md`; prior `M2-PREPARATION.md`. | No contradiction asserted. Runtime storage and backup storage are distinct. Google Drive selection is `CONFIRMED`; proposed implementation boundary restricts private folder, redaction, `G2`/`G4` approval, ₹0 quota, and no raw secrets. | Approve/reject the proposed backup implementation boundary; do not restate storage choice. |
++| `CON-02` | U-8R letter tokens `C`/`D`/`E` vs any architecture interpretation. | Owner request v1; no recovered option descriptions in repo, Drive/Docs, Gmail, Calendar, Notion, GitHub issues/PRs/comments. | No meaning invented. Values `CONFIRMED`; definitions `UNRESOLVED`. | Supply original option descriptions/explanations, or approve leaving meanings `UNRESOLVED`. |
++| `CON-03` | `Data protection/privacy = E` vs existing C-12 zero-secret-exposure constraint. | Owner request v1; `CONSTRAINTS.md`. | No mapping of `E` to C-12 or any other behavior. C-12 remains fail-closed. | Supply original `E` definition if available; otherwise approve no inferred mapping. |
++| `CON-04` | `Backup scope = C` vs exact backup contents. | Owner request v1. | Letter token preserved; scope meaning `UNRESOLVED`. | Supply original `C` definition for backup scope, or accept unresolved scope boundary. |
++| `CON-05` | Original U-8 vs replacement U-8R. | `DECISION_LEDGER.md`, `U-08-ORIGINAL.md`, `U-08R-REPLACEMENT.md`, `M1-FOUNDATION.md`. | Kept strictly separate; no conflation or overwritten history. | None unless Owner supplies original U-8 text. |
++| `CON-06` | `G1` approved remote model inference vs M2 scope and M3 OmniRoute `CLIENT_API` integration. | `CONSTRAINTS.md`, `ADR-AUTH-002.md`, `BLUEPRINT.md`. | M2 defines `G1` policy semantics only. M3 integration, approved ₹0 gateway allowlist, and OmniRoute `CLIENT_API` remain out of M2 and unmodified. | None for M2; M3 allowlist is a separate future decision. |
++| `CON-07` | Google Drive backup vs ₹0 budget. | Owner request v1; C-01. | Proposed boundary requires free quota only; no paid storage or paid API. | Approve/reject free-quota boundary; if paid storage would be required, separate Owner decision is needed because C-01 forbids it. |
++| `CON-08` | AVENOX ecosystem blueprint AOS roles vs AERON M2 Security Kernel roles. | Recovered Google Doc/DOCX version `1.0 | 18 November 2026`; user request roles. | Treated as `RECOVERED` context only, not AERON canonical spec. `Arena Agent`, `GPT-6`, and Founder authority are preserved as context; no AERON role policy invented. | None unless Owner wants the AOS context elevated to AERON canonical text. |
++| `CON-09` | Drive full-text matches for `Authority policy`, `Backup scope`, `Option C/D/E` vs relevance. | Current connected-source searches. | Matches were unrelated JS/JSON/OmniRoute source artifacts, school/PDF docs, or generic `Option C` terms. OmniRoute docs were read only to confirm they are OmniRoute-specific; no OmniRoute modification or secret exposure. | None; source-noise documented. |
++| `CON-10` | U-8R `Google Drive` backup vs OmniRoute preservation. | Owner request v1; C-05. | No contradiction. AERON backup storage is not OmniRoute configuration/data. No OmniRoute secret read or mutation. | None. |
++| `CON-11` | Persistent contextual memory and multi-agent architecture vs M2 no premature modules. | Owner constraints; `BLUEPRINT.md`; `M1-FOUNDATION.md`. | Constraints preserved; M2 does not implement `Aeron.Memory`, `Aeron.Agents`, or `Aeron.Execution`. U-6/U-7 reconstructions define boundaries only. | None for M2 specification; future milestone decisions remain separate. |
++
++## Status
++
++`PROPOSED` reconciliations; no historical decision changed. `UNRESOLVED` items are carried into `OWNER-DECISION-REQUIRED.md` without asking the Owner to repeat known decisions.
+diff --git a/docs/specifications/M2/DECISION-RECOVERY-MATRIX.md b/docs/specifications/M2/DECISION-RECOVERY-MATRIX.md
+new file mode 100644
+index 0000000..e47ce92
+--- /dev/null
++++ b/docs/specifications/M2/DECISION-RECOVERY-MATRIX.md
+@@ -0,0 +1,43 @@
++# Decision Recovery Matrix
++
++> Purpose: assign exactly one review state to every reconstructed decision.  
++> States: `RECOVERED`, `CONFIRMED`, `PROPOSED`, `UNRESOLVED`.
++
++| ID | Decision / content | State | Source/version | Boundary |
++|---|---|---|---|---|
++| `U8R-SEL-01` | Authority policy = `C` | `CONFIRMED` | Owner request v1, 2026-11-18 UTC | Value preserved; meaning `UNRESOLVED`. |
++| `U8R-SEL-02` | Permission authority = `D` | `CONFIRMED` | Owner request v1 | Value preserved; meaning `UNRESOLVED`. |
++| `U8R-SEL-03` | Authentication = `C` | `CONFIRMED` | Owner request v1 | Value preserved; meaning `UNRESOLVED`. |
++| `U8R-SEL-04` | Encryption = `D` | `CONFIRMED` | Owner request v1 | Value preserved; meaning `UNRESOLVED`. |
++| `U8R-SEL-05` | Data protection/privacy = `E` | `CONFIRMED` | Owner request v1 | Value preserved; meaning `UNRESOLVED`. |
++| `U8R-SEL-06` | Emergency shutdown = `D` | `CONFIRMED` | Owner request v1 | Value preserved; meaning `UNRESOLVED`. |
++| `U8R-SEL-07` | Activity logging/audit = `D` | `CONFIRMED` | Owner request v1 | Value preserved; meaning `UNRESOLVED`. |
++| `U8R-SEL-08` | Device access/authorization = `D` | `CONFIRMED` | Owner request v1 | Value preserved; meaning `UNRESOLVED`. |
++| `U8R-SEL-09` | Backup scope = `C` | `CONFIRMED` | Owner request v1 | Value preserved; meaning `UNRESOLVED`. |
++| `U8R-SEL-10` | Backup storage = `Google Drive` | `CONFIRMED` | Owner request v1 | Storage choice preserved; implementation boundary proposed. |
++| `U8R-DEF-01` | Original descriptions/explanations for `C`/`D`/`E` | `UNRESOLVED` | Searches in repo, Drive/Docs, Gmail, Calendar, Notion | No meaning invented. |
++| `REC-U1` | U-1 canonical body | `UNRESOLVED` | `U-01-TO-U-07.md`, blob `4598aa24…` | Principle confirmed; reconstruction `PROPOSED`. |
++| `REC-U2` | U-2 canonical body / mode catalog | `UNRESOLVED` | same blob | Principle confirmed; reconstruction `PROPOSED`. |
++| `REC-U3` | U-3 canonical body / scoring rules | `UNRESOLVED` | same blob | Principle confirmed; reconstruction `PROPOSED`. |
++| `REC-U4` | U-4 canonical body / scheduling rules | `UNRESOLVED` | same blob | Principle confirmed; reconstruction `PROPOSED`. |
++| `REC-U5` | U-5 canonical body / notification thresholds | `UNRESOLVED` | same blob | Principle confirmed; reconstruction `PROPOSED`. |
++| `REC-U6` | U-6 canonical body / roster, personality, avatar spec | `UNRESOLVED` | same blob | Principle confirmed; reconstruction `PROPOSED`. |
++| `REC-U7` | U-7 canonical body / retention and retrieval | `UNRESOLVED` | same blob | Principle confirmed; reconstruction `PROPOSED`. |
++| `REC-U8` | Original U-8 canonical text | `UNRESOLVED` | `U-08-ORIGINAL.md`, blob `5f72b9c9…` | Kept separate from U-8R; no clauses invented. |
++| `REC-U8R` | Replacement U-8R canonical text | `UNRESOLVED` | `U-08R-REPLACEMENT.md`, blob `422a0c53…` | Selection values `CONFIRMED`; definitions `UNRESOLVED`. |
++| `REC-ADR1` | ADR-AUTH-001 verbatim clauses | `UNRESOLVED` | `ADR-AUTH-001.md`, blob `aa7e8a51…` | Mandate `CONFIRMED`; reconstruction `PROPOSED`. |
++| `REC-ADR2` | ADR-AUTH-002 verbatim clauses | `UNRESOLVED` | `ADR-AUTH-002.md`, blob `f568793d…` | Rules `CONFIRMED`; reconstruction `PROPOSED`. |
++| `REC-ADR3` | ADR-AUTH-003 verbatim clauses | `UNRESOLVED` | `ADR-AUTH-003.md`, blob `0fc6102e…` | Rules `CONFIRMED`; reconstruction `PROPOSED`. |
++| `REC-AOS-01` | AVENOX/AOS Founder/final authority wording | `RECOVERED` | Google Doc version `8`, DOCX version `4`, document version `1.0 | 18 November 2026` | Context only, not AERON U/ADR canonical text. |
++| `REC-AOS-02` | AVENOX/AOS explicit human approval wording | `RECOVERED` | Same blueprint | Context only. |
++| `REC-CONSTRAINT-01` | Native Windows, .NET 10 LTS/WPF, ₹0, remote-only, no local models/weights, no paid fallback, OmniRoute untouched, Owner authority, default deny, permission-controlled tools, persistent memory, multi-agent, secure logging/audit/backups | `CONFIRMED` | Owner request v1 + `CONSTRAINTS.md` blob `57f9cb26…` | Preserved as boundary; not re-asked. |
++| `REC-M2-COMP-01` | OwnerAuthorityGuard spec | `PROPOSED` | `SECURITY-ARCHITECTURE.md` v1.0 | Requires Owner review. |
++| `REC-M2-COMP-02` | PolicyDecisionEngine spec | `PROPOSED` | `SECURITY-ARCHITECTURE.md` v1.0 | Requires Owner review. |
++| `REC-M2-COMP-03` | OwnerApprovalService spec | `PROPOSED` | `SECURITY-ARCHITECTURE.md` v1.0 | Requires Owner review. |
++| `REC-M2-COMP-04` | Parameter-hashing infrastructure spec | `PROPOSED` | `SECURITY-ARCHITECTURE.md` v1.0 | Requires Owner review. |
++| `REC-M2-COMP-05` | AuditLedger spec | `PROPOSED` | `SECURITY-ARCHITECTURE.md` v1.0 | Requires Owner review. |
++| `REC-M2-COMP-06` | Windows Security Vault spec | `PROPOSED` | `SECURITY-ARCHITECTURE.md` v1.0 | Requires Owner review; no third-party vault dependency proposed. |
++| `REC-M2-TEST-01` | Threat model, CI scope, acceptance criteria | `PROPOSED` | `SECURITY-THREAT-MODEL.md`, `M2-ACCEPTANCE-CRITERIA.md` | Requires Owner review. |
++| `REC-M2-GRAPH-01` | Component/module dependency graph | `PROPOSED` | `M2-DEPENDENCY-GRAPH.md` | Preserves current project references; future module proposed only. |
++| `REC-D-M1-06` | M1-closure-only RAM deviation | `CONFIRMED` | `DECISION_LEDGER.md`, local modified blob `be7efb3…` | Not extended to M2 or later; no signature invented. |
++| `REC-M2-BUILD` | Explicit M2 implementation authorization | `UNRESOLVED` | Current request states specification development only | Implementation blocked. |
+diff --git a/docs/specifications/M2/HISTORICAL-VS-RECONSTRUCTED-REGISTER.md b/docs/specifications/M2/HISTORICAL-VS-RECONSTRUCTED-REGISTER.md
+new file mode 100644
+index 0000000..521db4b
+--- /dev/null
++++ b/docs/specifications/M2/HISTORICAL-VS-RECONSTRUCTED-REGISTER.md
+@@ -0,0 +1,27 @@
++# Historical vs Reconstructed Content Register
++
++> Purpose: separate recovered/confirmed historical content from newly drafted proposals.
++
++| Document | Historical / recovered / confirmed content | Newly drafted `PROPOSED` content | `UNRESOLVED` content |
++|---|---|---|---|
++| `U-01.md` | Exact core principle from `U-01-TO-U-07.md`, blob `4598aa24…`; status `CONFIRMED` principle. | M2 controlled-evolution handling, proposal/approval boundary, OwnerAuthorityGuard dependency. | Exact canonical body, proposal format, thresholds. |
++| `U-02.md` | Exact core principle; status `CONFIRMED` principle. | M2 no-assumption rule for adaptive modes; ambiguous-request denial. | Exact mode catalog and transition rules. |
++| `U-03.md` | Exact core principle; status `CONFIRMED` principle. | M2 deterministic-security separation from urgency scoring. | Exact scoring rules. |
++| `U-04.md` | Exact core principle; status `CONFIRMED` principle. | M2 no adaptive scheduling; scheduled `L2` approval binding. | Exact scheduling rules. |
++| `U-05.md` | Exact core principle; status `CONFIRMED` principle. | M2 hard-visible approval/safety notices; `G3` boundary. | Exact notification thresholds. |
++| `U-06.md` | Exact core principle; status `CONFIRMED` principle. | M2 authorization inheritance, no agent frameworks, conflict precedence. | Exact roster, personalities, avatar/HQ spec. |
++| `U-07.md` | Exact core principle; status `CONFIRMED` principle. | M2 separation of audit records from contextual memory; C-12 boundary. | Exact retention/retrieval/inspection/edit/delete rules. |
++| `U-08.md` | Exact placeholder identifier, relationship, recovery status, audit record, integrity rule from blob `5f72b9c9…`. | Governance handling only; no U-8 clauses drafted. | Original U-8 canonical text, scope, rationale. |
++| `U-08R.md` | Ten `CONFIRMED` Owner selections; exact placeholder wording from blob `422a0c53…`; exact recovered AVENOX/AOS context. | M2 immutable-token handling, Google Drive boundary, insert-later design. | Exact U-8R canonical text; `C`/`D`/`E` definitions; backup implementation boundary. |
++| `ADR-AUTH-001.md` | Exact confirmed mandate from blob `aa7e8a51…`; exact unrecovered note; exact AVENOX/AOS authority context. | OwnerAuthorityGuard normative reconstruction. | Verbatim historical clauses; additional emergency/inheritance semantics. |
++| `ADR-AUTH-002.md` | Exact confirmed governance rules from blob `f568793d…`; exact unrecovered note. | PolicyDecisionEngine normative reconstruction; M2/M3 boundary. | Verbatim historical clauses; exact classification/version/destination rules. |
++| `ADR-AUTH-003.md` | Exact confirmed governance rules from blob `0fc6102e…`; exact unrecovered note. | OwnerApprovalService, parameter hashing, AuditLedger normative reconstruction. | Verbatim historical clauses; exact expiry/cancel/recovery semantics. |
++| `SECURITY-THREAT-MODEL.md` | Existing constraints/ADR rules as boundaries. | Entire 11-threat defensive model. | No historical canonical text; all proposed tests require review. |
++| `SECURITY-ARCHITECTURE.md` | Actual project references and existing constraints. | Entire component, interface, data-flow, failure-state, acceptance set. | Exact canonical policy text and option definitions. |
++| `M2-IMPLEMENTATION-PLAN.md` | Prior roadmap and implementation-block status. | Entire staged plan. | M2 BUILD authorization. |
++| `OWNER-DECISION-REQUIRED.md` | Known decisions excluded from re-asking. | Consolidated genuinely missing Owner inputs. | Any decision not supplied by Owner. |
++| `DECISION-RECOVERY-MATRIX.md` | Source/version references and states. | State assignment structure. | `UNRESOLVED` rows remain open. |
++| `SOURCE-AND-PROVENANCE-REGISTER.md` | Exact source refs, blob hashes, and recovered quotes. | Register organization. | Unrecovered sources. |
++| `CONTRADICTION-REPORT.md` | Known decision boundaries. | Proposed reconciliations. | Owner resolution of listed tensions. |
++| `M2-ACCEPTANCE-CRITERIA.md` | Existing constraints and prior acceptance gates. | Spec-pack and future BUILD acceptance criteria. | Owner acceptance and BUILD authorization. |
++| `M2-DEPENDENCY-GRAPH.md` | Actual project-reference graph. | Proposed component graph and future module boundary. | Owner approval of any future project reference. |
+diff --git a/docs/specifications/M2/M2-ACCEPTANCE-CRITERIA.md b/docs/specifications/M2/M2-ACCEPTANCE-CRITERIA.md
+new file mode 100644
+index 0000000..6a85730
+--- /dev/null
++++ b/docs/specifications/M2/M2-ACCEPTANCE-CRITERIA.md
+@@ -0,0 +1,48 @@
++# M2 Acceptance Criteria
++
++> Status: `PROPOSED / NOT IMPLEMENTATION`.
++
++## 1. Spec-pack v1.0 acceptance criteria
++
++The specification pack is technically coherent and ready for Owner review when all of the following are true:
++
++1. `docs/specifications/M2/` contains all required README, U-01…U-08R, ADR-AUTH-001…003, threat-model, architecture, implementation-plan, Owner-decision, recovery-matrix, provenance, historical/reconstructed, contradiction, acceptance, and dependency-graph files.
++2. Every canonical U/ADR document has distinct recovered/confirmed, `PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW`, unresolved-question, and dependency sections.
++3. No reconstructed document is described as an original historical specification.
++4. No proposed document is marked `CONFIRMED`.
++5. Ten U-8R selections are preserved unchanged and marked `CONFIRMED`.
++6. `C`, `D`, and `E` meanings are not invented and remain `UNRESOLVED`.
++7. Original U-8 remains separate from replacement U-8R.
++8. Existing architectural constraints and D-M1-01…D-M1-06 are preserved.
++9. `RECOVERED` content has source/version information in `SOURCE-AND-PROVENANCE-REGISTER.md`.
++10. `DECISION-RECOVERY-MATRIX.md` assigns one of `RECOVERED`, `CONFIRMED`, `PROPOSED`, or `UNRESOLVED` to every reconstructed decision.
++11. `OWNER-DECISION-REQUIRED.md` contains only genuinely missing Owner inputs and excludes known decisions.
++12. All 11 threats have attack surface, security objective, prevention, detection, recovery, and required automated tests.
++13. All five Security Kernel components cover their required topics.
++14. `M2-DEPENDENCY-GRAPH.md` preserves the actual project-reference graph and introduces no premature module or third-party agent framework.
++15. No C# source, application test, CI workflow, project reference, package, PR state, tag/release, OmniRoute configuration/data, local model/runtime, or paid API was changed.
++16. No commit or push was performed.
++17. Final status is `M2 SPECIFICATION — PROPOSED`.
++
++## 2. Future M2 BUILD acceptance criteria — NOT AUTHORIZED
++
++These criteria apply only after explicit Owner `M2 BUILD` authorization. None were implemented or executed here.
++
++| Area | Future acceptance criterion |
++|---|---|
++| Architecture | `Aeron.Contracts` remains zero-dependency; `Aeron.Security` references only `Aeron.Contracts`; `Aeron.Infrastructure` references `Aeron.Contracts` + `Aeron.Security`; `Aeron.Core` references `Contracts` + `Infrastructure` + `Security`; `Aeron.Desktop` references `Contracts` + `Core`. Any future `Aeron.Platform.Windows` reference must be acyclic and Owner-approved. |
++| Build/CI | Strict C# 14 / .NET 10 LTS Release build and `win-x64` publish with zero warnings/errors; deterministic build; analyzers; Windows CI green; no banned packages, local model weights, skill scripts, or third-party agent frameworks. |
++| Default deny | Every `G1`–`G4` / `L0`–`L3` combination has explicit tests; missing/ambiguous/unversioned/contradictory requests deny. |
++| Owner authority | Pause, cancel, revoke, reconfigure, emergency stop, conflicting instructions, and agent inheritance tests prove Owner preemption and fail-closed behavior. |
++| Approval | Explicit request, parameter hash, expiry, cancellation, denial, mismatch, replay, self-approval prevention, and immediate pre-execution revalidation tests pass; no side effect before approval. |
++| Parameter hash | Canonical redacted serialization is deterministic across field order, Unicode, numeric, and date cases; any changed parameter changes hash and denies. |
++| AuditLedger | Hash chain verification on startup/CI; append-only; SQLite WAL; tamper detection; redacted recovery/failure handling; no secret leakage. |
++| Vault | DPAPI/Credential Manager current-user round-trip; Windows ACLs; zero secrets in `aeron.config.json`; inline-secret rejection; no OmniRoute secret read/modification; no third-party vault dependency without justification. |
++| Redaction | Logs, structured properties, nested exceptions, SQLite journals, approval UI, audit records, and test diagnostics redact synthetic secrets; fail closed on redaction error. |
++| Backup | Confirmed `Google Drive` storage choice preserved; restricted private folder; `G2`/`G4` approval; secret redaction; ₹0 quota; no personal filenames/private `Documents` listings; no raw secrets. |
++| Crash handling | Approval, audit, vault, and execution preflight crash-injection tests prove no duplicate side effect, no silent repair, and deny-on-uncertain-state. |
++| M2 freeze | Owner acceptance evidence, SHA-256 artifact provenance, formal review, and tag/release preparation; M3 remains unstarted. |
++
++## 3. Status
++
++Spec-pack acceptance is self-checked by this pack. Future M2 BUILD acceptance is `NOT AUTHORIZED` and remains blocked until Owner review and explicit authorization.
+diff --git a/docs/specifications/M2/M2-DEPENDENCY-GRAPH.md b/docs/specifications/M2/M2-DEPENDENCY-GRAPH.md
+new file mode 100644
+index 0000000..0f70472
+--- /dev/null
++++ b/docs/specifications/M2/M2-DEPENDENCY-GRAPH.md
+@@ -0,0 +1,81 @@
++# M2 Dependency Graph
++
++> Status: `PROPOSED / NOT IMPLEMENTATION`.  
++> Preserves the existing project dependency structure. No project reference or package was changed.
++
++## 1. Actual existing project references
++
++```mermaid
++graph LR
++  Contracts[Aeron.Contracts<br/>net10.0, zero refs] --> Security[Aeron.Security<br/>net10.0]
++  Contracts --> Infrastructure[Aeron.Infrastructure<br/>net10.0]
++  Security --> Infrastructure
++  Contracts --> Core[Aeron.Core<br/>net10.0]
++  Infrastructure --> Core
++  Security --> Core
++  Contracts --> Desktop[Aeron.Desktop<br/>net10.0-windows WPF]
++  Core --> Desktop
++```
++
++Verified from current `.csproj` files and `Aeron.Architecture.Tests`: `Aeron.Contracts` has no project/package references; `Aeron.Security` references `Contracts` only; `Aeron.Infrastructure` references `Contracts` + `Security`; `Aeron.Core` references `Contracts` + `Infrastructure` + `Security`; `Aeron.Desktop` references `Contracts` + `Core`.
++
++## 2. Proposed M2 component graph
++
++```mermaid
++graph TD
++  SC[1. Security contracts<br/>Aeron.Contracts] --> PDE[3. PolicyDecisionEngine]
++  SC --> OAG[2. OwnerAuthorityGuard]
++  SC --> PH[5. Parameter-hashing infrastructure]
++  SC --> AL[6. AuditLedger]
++  SC --> WV[7. Windows credential vault interface]
++
++  OAG --> PDE
++  PDE --> OAS[4. OwnerApprovalService]
++  PH --> OAS
++  OAS --> AL
++  PDE --> AL
++  OAG --> AL
++
++  WV -. implemented by future .-> PW[Future Aeron.Platform.Windows<br/>DPAPI / Credential Manager]
++  PW -. injected through composition root .-> Core[Aeron.Core / Aeron.Desktop composition]
++
++  AL --> INF[Aeron.Infrastructure<br/>SQLite WAL / RedactingLogger / ACLs]
++  PDE --> SEC[Aeron.Security<br/>M2 expansion]
++  OAG --> SEC
++  OAS --> SEC
++  PH --> SEC
++
++  TEST[8. Security testing and CI] --> SC
++  TEST --> OAG
++  TEST --> PDE
++  TEST --> OAS
++  TEST --> PH
++  TEST --> AL
++  TEST --> WV
++```
++
++## 3. Proposed future Windows vault module boundary
++
++- `IWindowsCredentialVault` is proposed in `Aeron.Contracts`.
++- A future `Aeron.Platform.Windows` module would implement that interface using built-in Windows DPAPI/Credential Manager and depend on `Aeron.Contracts`, not on `Aeron.Security`.
++- `Aeron.Security` consumes the interface from `Aeron.Contracts`; `Aeron.Core`/`Aeron.Desktop` composition injects the implementation.
++- This avoids a `Aeron.Security` ↔ `Aeron.Platform.Windows` cycle and preserves the acyclic graph.
++- No direct project reference, package, or module is created in this specification task.
++- No third-party vault dependency is proposed; any future third-party dependency would require explicit justification and Owner approval.
++
++## 4. Dependency table
++
++| # | Node | Depends on | Responsibility | Failure state |
++|---:|---|---|---|---|
++| 1 | Security contracts | `Aeron.Contracts` only | Typed action, classification, policy, approval, hash, audit, vault interfaces | Missing/invalid contract denies |
++| 2 | OwnerAuthorityGuard | Security contracts, policy version, Owner state | Owner preemption, precedence, inheritance, fail-closed authority | `OwnerPreempted`, `AuthorityStateUnknown`, `PolicyVersionMismatch` |
++| 3 | PolicyDecisionEngine | Security contracts, classifiers, destination validator, policy version | Deterministic default-deny `G1`–`G4` / `L0`–`L3` evaluation and evidence | `UnclassifiedAction`, `AmbiguousRequest`, `CanonicalSpecUnresolved` |
++| 4 | OwnerApprovalService | Parameter hasher, PolicyDecisionEngine, OwnerAuthorityGuard | Explicit expiring single-use approvals and immediate revalidation | `Expired`, `Cancelled`, `Denied`, `ParameterMismatch`, `Preempted` |
++| 5 | Parameter-hashing infrastructure | Security contracts, redaction | Canonical redacted serialization and SHA-256 binding | `CanonicalizationFailed`, `RedactionFailed`, `HashMismatch` |
++| 6 | AuditLedger | Security contracts, `Aeron.Infrastructure` SQLite WAL/redaction/ACLs | Append-only hash-chained redacted audit records and startup verification | `ChainMismatch`, `WriteFailed`, `WALCorrupt`, `StorageUnavailable` |
++| 7 | Windows credential vault | `IWindowsCredentialVault`, Windows DPAPI/Credential Manager, ACLs, config validator | Secret lifecycle, zero secrets in `aeron.config.json`, backup constraints | `VaultUnavailable`, `DecryptFailed`, `InlineSecretRejected`, `BackupUnsafe` |
++| 8 | Security testing and CI | All components, Windows runner, architecture/hygiene tests | Automated proof of default deny, approval, audit, vault, redaction, crash recovery, graph preservation | CI failure denies acceptance |
++
++## 5. Status
++
++`PROPOSED / NOT IMPLEMENTATION`. M2 BUILD remains blocked until Owner review and explicit authorization.
+diff --git a/docs/specifications/M2/M2-IMPLEMENTATION-PLAN.md b/docs/specifications/M2/M2-IMPLEMENTATION-PLAN.md
+new file mode 100644
+index 0000000..faaaa63
+--- /dev/null
++++ b/docs/specifications/M2/M2-IMPLEMENTATION-PLAN.md
+@@ -0,0 +1,35 @@
++# M2 Implementation Plan — Proposed Stages Only
++
++> Status: `PROPOSED / NOT AUTHORIZED`.  
++> This is specification development, not implementation authorization.  
++> No code, tests, CI, project references, packages, tags, releases, PR actions, or OmniRoute changes were made.
++
++## 0. Hard gate
++
++Implementation remains blocked until the Owner reviews the specification pack and explicitly authorizes the `M2 BUILD` milestone. The Owner must also resolve the genuinely missing inputs in `OWNER-DECISION-REQUIRED.md`.
++
++## 1. Proposed stages
++
++| Stage | Name | Proposed scope | Exit gate |
++|---|---|---|---|
++| M2.S0 | Specification review | Owner reviews all `PROPOSED RECONSTRUCTION` sections, `CONFIRMED` U-8R selections, `UNRESOLVED` definitions, contradiction report, threat model, architecture, acceptance criteria, and dependency graph. | Owner accepts/rejects spec pack v1.0 and supplies or defers missing historical texts/option definitions. |
++| M2.S1 | Security contracts | Add typed M2 contracts only after authorization: action request, classification, policy decision, approval, parameter hash, audit entry, vault interface. | `Aeron.Contracts` remains zero-dependency; architecture tests pass; no secrets in contracts. |
++| M2.S2 | Parameter hashing and redaction boundary | Canonical redacted serialization and SHA-256 parameter binding; extend redaction test fixtures with synthetic secrets only. | Deterministic hash tests; mismatch tests; redaction tests; no raw secret in logs/audit/prompts. |
++| M2.S3 | PolicyDecisionEngine + OwnerAuthorityGuard | Default-deny `G1`–`G4`/`L0`–`L3` evaluation, Owner preemption, precedence, ambiguous-request rejection, policy versioning, evaluation evidence. | Full policy matrix tests; preemption tests; conflict tests; fail-closed tests. |
++| M2.S4 | OwnerApprovalService | Explicit approval requests, expiry, cancellation, denial, single-use approval IDs, immediate pre-execution revalidation, self-approval prevention. | Approval lifecycle tests; replay/mismatch/expiry/cancel tests; no side effect before approval. |
++| M2.S5 | AuditLedger | Append-only hash-chained SQLite WAL records, startup verification, tamper detection, redacted recovery/failure handling. | Chain verification tests; tamper tests; WAL rollback/crash tests; no secret leakage. |
++| M2.S6 | Windows Security Vault | Future `Aeron.Platform.Windows` DPAPI/Credential Manager adapter; current-user ACLs; zero secrets in `aeron.config.json`; backup/recovery constraints. | Windows-only vault/ACL tests; inline-secret rejection; no OmniRoute modification; no paid service. |
++| M2.S7 | Security CI and architecture enforcement | Extend Windows CI and architecture/hygiene tests for M2 components, banned packages/weights/frameworks/skill scripts, redaction, audit chain, and project-reference graph. | Windows CI green; zero warnings; all proposed security tests pass; no premature modules. |
++| M2.S8 | Owner acceptance and M2 freeze | APEX/Windows interactive verification, evidence preservation, SHA-256 artifact provenance, formal review, M2 release/tag preparation. | Owner acceptance; M2 frozen; M3 remains unstarted and requires approved ₹0 gateway allowlist. |
++
++## 2. Out of scope for M2
++
++- M3 OmniRoute `CLIENT_API` integration, paid APIs, local LLM runtimes, model weights, skill-script execution, third-party agent frameworks, contextual-memory engine, multi-agent engine, compiled tool runner, voice, avatars, virtual HQ, PR #3 merge/approval/closure, M1 release/tag, and any OmniRoute modification.
++
++## 3. Budget and preservation
++
++₹0 budget is preserved: free/OSS and built-in Windows APIs only. Existing project dependency graph is preserved. Application source/tests remain unchanged until explicit M2 BUILD authorization.
++
++## 4. Status
++
++`PROPOSED / NOT AUTHORIZED`. Implementation remains blocked until Owner review and explicit `M2 BUILD` authorization.
+diff --git a/docs/specifications/M2/OWNER-DECISION-REQUIRED.md b/docs/specifications/M2/OWNER-DECISION-REQUIRED.md
+new file mode 100644
+index 0000000..be02612
+--- /dev/null
++++ b/docs/specifications/M2/OWNER-DECISION-REQUIRED.md
+@@ -0,0 +1,37 @@
++# Consolidated Owner Decisions Genuinely Required
++
++> Status: `PROPOSED REVIEW REQUEST`.  
++> This file contains only decisions that genuinely require Owner input. It does **not** ask the Owner to repeat known decisions.
++
++## 1. Explicitly excluded — already answered, not asked again
++
++- The ten U-8R selections (`C`, `D`, `E`, and `Google Drive`) are `CONFIRMED` and preserved unchanged.
++- Existing architectural constraints are `CONFIRMED` and preserved.
++- `D-M1-01`–`D-M1-06` are preserved; D-M1-06's M1-closure-only RAM deviation is not extended to M2.
++- Original U-8 and replacement U-8R remain separate.
++- PR #3 merge/review authority, M1 closeout status, and M2 implementation block are already recorded.
++- No question below asks for the U-8R selection values, architecture constraints, D-M1-06 decision, or PR #3 merge authority to be restated.
++
++## 2. Decisions genuinely requiring Owner input
++
++1. **Spec-pack acceptance:** Accept, reject, or request revisions to `AERON M2 — SECURITY KERNEL SPECIFICATION PACK v1.0`. This is specification review, not implementation authorization.
++2. **Historical text availability:** If an authoritative external source exists, supply exact historical wording with source/version for U-1…U-7, original U-8, replacement U-8R, and ADR-AUTH-001…003. If no such source exists, accept the `UNRESOLVED` canonical-text status and the `PROPOSED RECONSTRUCTION` boundary. This is not a request to repeat known U-8R selections.
++3. **U-8R option definitions:** Supply the original option descriptions and explanations for the letter tokens `C`, `D`, and `E` where available. If unavailable, approve leaving those meanings `UNRESOLVED` and prohibit inferred mappings. Do not change the selected values.
++4. **Google Drive backup implementation boundary:** Under the already confirmed `Backup storage = Google Drive`, specify or approve the restricted private folder, retention, encryption/secret handling, `G2`/`G4` approval requirements, ₹0 quota, and recovery procedure. This is an implementation boundary, not a request to restate the storage choice.
++5. **Contradiction resolution:** Accept or revise the boundaries in `CONTRADICTION-REPORT.md`, especially Google Drive backup vs C-12 / `G2` / `G4` / ₹0 budget, and U-8R letter-token definitions vs existing constraints.
++6. **Proposed component specifications:** Approve/reject the `PROPOSED` M2 Security Kernel component specs for OwnerAuthorityGuard, PolicyDecisionEngine, OwnerApprovalService, parameter hashing, AuditLedger, and Windows Security Vault.
++7. **Proposed technical choices not recoverable from existing records:** Approve/reject proposed interface names, canonical parameter serialization, SHA-256 approval binding, policy-version format, hash-chain record shape, startup verification, vault abstraction, and Windows CI scope. These are new `PROPOSED` choices, not historical decisions.
++8. **Threat model and acceptance criteria:** Approve/reject `SECURITY-THREAT-MODEL.md` and `M2-ACCEPTANCE-CRITERIA.md` as the review baseline for any future M2 BUILD.
++9. **Future M2 BUILD authorization:** Not requested now as implementation. After specification review, the Owner must explicitly authorize `M2 BUILD` before any stage in `M2-IMPLEMENTATION-PLAN.md` begins.
++
++## 3. Not requested in this pack
++
++- No PR #3 merge, approval, or closure.
++- No tag/release creation.
++- No APEX raw-evidence upload instruction beyond existing M1 closeout records.
++- No request to restate known U-8R selections or architectural constraints.
++- No M2 implementation, C# source change, application-test change, OmniRoute change, local model/runtime installation, or paid API.
++
++## 4. Status
++
++`PROPOSED REVIEW REQUEST`. Final pack status: `M2 SPECIFICATION — PROPOSED`.
+diff --git a/docs/specifications/M2/README.md b/docs/specifications/M2/README.md
+new file mode 100644
+index 0000000..369d028
+--- /dev/null
++++ b/docs/specifications/M2/README.md
+@@ -0,0 +1,89 @@
++# AERON M2 — SECURITY KERNEL SPECIFICATION PACK v1.0
++
++> Status: `M2 SPECIFICATION — PROPOSED`  
++> Owner: Aditya  
++> Lead Builder: Arena Agent  
++> Technical Architect: GPT-6  
++> Scope: Specification development only. **Not implementation authorization.**  
++> Version: `v1.0`  
++> Session date: 2026-11-18 UTC  
++> Implementation status: `BLOCKED` until Owner review and explicit `M2 BUILD` authorization.
++
++## 0. Purpose and boundaries
++
++This pack recovers, reconstructs, and organizes AERON's missing security specifications using decisions already made by the Project Owner. It is a reviewable specification pack, not a build authorization. No C# source, application test, PR, tag/release, OmniRoute file, local model/runtime, or paid API was changed or introduced.
++
++All previously recorded decisions are preserved. No Owner is asked to repeat known decisions.
++
++### Owner-review state legend
++
++| State | Meaning |
++|---|---|
++| `RECOVERED` | Exact historical content was found with source and version information. |
++| `CONFIRMED` | Explicit Owner decision already recorded; not newly drafted here. |
++| `PROPOSED` | Newly drafted content awaiting Owner review. |
++| `UNRESOLVED` | Insufficient evidence or missing Owner decision; no meaning invented. |
++
++### Known decisions preserved — not asked again
++
++#### U-8R existing selections (`CONFIRMED`)
++
++| Area | Existing selection |
++|---|---|
++| Authority policy | `C` |
++| Permission authority | `D` |
++| Authentication | `C` |
++| Encryption | `D` |
++| Data protection/privacy | `E` |
++| Emergency shutdown | `D` |
++| Activity logging/audit | `D` |
++| Device access/authorization | `D` |
++| Backup scope | `C` |
++| Backup storage | `Google Drive` |
++
++The meanings of `C`, `D`, and `E` are `UNRESOLVED` because their original option descriptions and explanations were not recovered. No letter was reinterpreted. Original `U-8` remains separate from replacement `U-8R`.
++
++#### Existing architectural constraints (`CONFIRMED`)
++
++- Native Windows desktop application.
++- .NET 10 LTS and WPF.
++- ₹0 budget.
++- Remote-only model inference.
++- No local model weights or inference runtimes.
++- No paid API fallback.
++- OmniRoute installation must remain untouched.
++- Owner retains ultimate authority.
++- Default-deny security.
++- Permission-controlled tool execution.
++- Persistent contextual memory.
++- Multi-agent architecture.
++- Secure logging, audit, and backups.
++
++Also preserved: `D-M1-01`–`D-M1-06`, including `D-M1-06`'s M1-closure-only approximately 280 MB Working Set deviation, preserved ≤120 MB original target, no claim that the target was achieved, memory work future, and no extension to M2 or later.
++
++### File index
++
++| File | Purpose |
++|---|---|
++| `U-01.md`–`U-07.md` | Per-decision U-1…U-7 reconstruction. |
++| `U-08.md` | Original U-8, kept separate from U-8R. |
++| `U-08R.md` | Replacement U-8R with confirmed selections and unresolved option definitions. |
++| `ADR-AUTH-001.md`–`ADR-AUTH-003.md` | ADR-AUTH reconstructions. |
++| `SECURITY-THREAT-MODEL.md` | Defensive M2 threat model. |
++| `SECURITY-ARCHITECTURE.md` | Detailed proposed Security Kernel component specifications. |
++| `M2-IMPLEMENTATION-PLAN.md` | Proposed stages; not implementation authorization. |
++| `OWNER-DECISION-REQUIRED.md` | Consolidated list of only genuinely missing Owner inputs. |
++| `DECISION-RECOVERY-MATRIX.md` | State table for every reconstructed decision. |
++| `SOURCE-AND-PROVENANCE-REGISTER.md` | Sources, versions, blob hashes, and recovered exact wording. |
++| `HISTORICAL-VS-RECONSTRUCTED-REGISTER.md` | Historical content vs newly drafted proposals. |
++| `CONTRADICTION-REPORT.md` | Apparent tensions and boundaries. |
++| `M2-ACCEPTANCE-CRITERIA.md` | Spec-pack acceptance and future M2 BUILD acceptance. |
++| `M2-DEPENDENCY-GRAPH.md` | Component and existing project dependency graph. |
++
++### Global status
++
++Every canonical U/ADR document is either `PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW` for newly drafted normative wording, `CONFIRMED` for known selections, `RECOVERED` for exact historical/contextual wording, or `UNRESOLVED` where canonical text/option definitions are missing. No proposed document is marked confirmed.
++
++Implementation remains blocked until the Owner reviews the specifications and explicitly authorizes the `M2 BUILD` milestone.
++
++**Final status:** `M2 SPECIFICATION — PROPOSED`
+diff --git a/docs/specifications/M2/SECURITY-ARCHITECTURE.md b/docs/specifications/M2/SECURITY-ARCHITECTURE.md
+new file mode 100644
+index 0000000..6722f73
+--- /dev/null
++++ b/docs/specifications/M2/SECURITY-ARCHITECTURE.md
+@@ -0,0 +1,135 @@
++# M2 Security Kernel — Proposed Architecture and Component Specifications
++
++> Status: `PROPOSED / NOT IMPLEMENTATION`.  
++> Final pack status: `M2 SPECIFICATION — PROPOSED`.  
++> No C# source, project reference, package, test, CI workflow, or OmniRoute configuration was changed.
++
++## 1. Preserved project dependency structure
++
++Actual current project references must be preserved:
++
++- `Aeron.Contracts`: no project or package references; `net10.0`.
++- `Aeron.Security`: references `Aeron.Contracts` only; `net10.0`.
++- `Aeron.Infrastructure`: references `Aeron.Contracts`, `Aeron.Security`; `net10.0`; `Microsoft.Data.Sqlite`.
++- `Aeron.Core`: references `Aeron.Contracts`, `Aeron.Infrastructure`, `Aeron.Security`; `net10.0`.
++- `Aeron.Desktop`: references `Aeron.Contracts`, `Aeron.Core`; `net10.0-windows` WPF `WinExe`.
++- Future `Aeron.Platform.Windows`: proposed only; must not create a cycle. It should implement `IWindowsCredentialVault` from `Aeron.Contracts`; `Aeron.Security` consumes the interface, and `Aeron.Core`/`Aeron.Desktop` composition wires the implementation. No direct `Aeron.Security` → `Aeron.Platform.Windows` project reference is proposed.
++- No premature `Aeron.Gateway`, `Aeron.Memory`, `Aeron.Agents`, `Aeron.Execution`, voice, avatar, or virtual-HQ modules.
++- No third-party agent framework; no third-party vault dependency is justified or proposed.
++
++Preserved constraints: C# 14 / .NET 10 LTS, WPF native Windows desktop, deterministic builds, `TreatWarningsAsErrors=true`, Windows 11 25H2 Build 26200 `x64`, ₹0 budget, remote-only inference, no local model weights/runtimes, no paid API fallback, OmniRoute untouched, Owner ultimate authority, default-deny security, permission-controlled tool execution, persistent contextual memory, multi-agent architecture, secure logging/audit/backups, and `%LOCALAPPDATA%\Aeron` user-ACL storage outside cloud-synced `Documents` and OmniRoute directories.
++
++## 2. Proposed interfaces and responsibilities
++
++All interface names below are `PROPOSED`; no code is implemented.
++
++| Interface / component | Responsibility | Proposed contract shape |
++|---|---|---|
++| `IActionClassifier` | Convert a request into a typed action classification and authority tier | `Classify(ActionRequest) -> ActionClassification` |
++| `IDataClassifier` | Classify data as `Secret`, `LocalPrivate`, or `RoutineContext` without emitting raw values | `Classify(RedactedPayload) -> DataClassification` |
++| `IDestinationValidator` | Validate exact source/destination and reject ambiguous or unapproved destinations | `Validate(ActionRequest) -> DestinationValidation` |
++| `IPolicyVersionProvider` | Provide immutable policy version/hash for evaluation evidence | `Current() -> PolicyVersion` |
++| `IParameterHasher` | Canonicalize redacted parameters and compute SHA-256 binding | `Compute(CanonicalActionRequest) -> ParameterHash` |
++| `IPolicyDecisionEngine` | Deterministic default-deny evaluation across `G1`–`G4` / `L0`–`L3` | `Evaluate(ActionRequest) -> PolicyDecision` |
++| `IOwnerAuthorityGuard` | Non-bypassable Owner preemption and authority precedence | `Authorize(ActionRequest, PolicyDecision) -> AuthorityResult` |
++| `IOwnerApprovalService` | Explicit, single-use, expiring, parameter-bound approvals | `RequestAsync`, `ValidateBeforeExecutionAsync`, `CancelAsync`, `DenyAsync` |
++| `IAuditLedger` | Append-only hash-chained redacted audit records | `AppendAsync`, `VerifyChainAsync`, `LastVerifiedHeadAsync` |
++| `IWindowsCredentialVault` | DPAPI/Credential Manager secret lifecycle abstraction | `StoreAsync`, `RetrieveAsync`, `RotateAsync`, `DeleteAsync` |
++| `IRedactionFilter` | Existing M1 redaction contract, reused and extended | `Redact`, `ContainsPotentialSecret` |
++
++## 3. A. OwnerAuthorityGuard — `PROPOSED`
++
++Coverage:
++
++- **Owner authority:** ultimate, non-delegable; AERON Core and specialist agents are bounded delegates.
++- **Pause/cancel/revoke:** any Owner pause, cancel, revoke, reconfigure, or emergency-stop directive immediately preempts pending approvals and denies new consequential actions.
++- **Emergency shutdown:** hard preemptive state; no queued action may execute after shutdown; pending approvals are invalidated; audit records the preemption.
++- **Authorization inheritance across agents:** agents inherit only bounded permissions from AERON Core within Owner limits; no agent may delegate Owner authority or bypass Core/Owner oversight.
++- **Precedence when instructions conflict:** Owner preemption first; explicit current policy second; default deny last. Untrusted model/agent text never becomes policy.
++- **Fail-closed behaviour:** deny if Owner state, policy version, canonical-specification status, approval binding, or audit-chain verification is unavailable.
++
++Failure states: `OwnerPreempted`, `AuthorityStateUnknown`, `PolicyVersionMismatch`, `AgentAuthorityExceeded`, `AuditUnavailable`. All deny by default.
++
++## 4. B. PolicyDecisionEngine — `PROPOSED`
++
++Coverage:
++
++- **G1–G4 governance levels:** preserved from `CONSTRAINTS.md` / `ADR-AUTH-002.md` confirmed rules. `G1` is approved zero-cost remote inference without repeated per-message prompts but with non-bypassable guards; `G2` restricted disclosure requires exact source/destination approval; `G3` external communications and `G4` external account modifications require per-action parameter-hashed approval. M2 defines policy only; M3 OmniRoute `CLIENT_API` integration is out of scope.
++- **L0–L3 authority levels:** `L0` isolated AERON internal state; `L1` bounded safe reads/drafts; `L2` consequential local actions require explicit Owner approval; `L3` forbidden local actions hard-denied.
++- **Action classification:** every request must have actor, action type, parameters, data classification, destination, policy version, and requested side effect.
++- **Data classification:** `Secret` hard-blocked/redacted; `LocalPrivate`/restricted requires `G2` approval; `RoutineContext` only within approved disclosure policy.
++- **Destination validation:** exact source and destination must be known; unapproved, ambiguous, changed, or missing destinations deny.
++- **Policy versioning:** every decision records immutable policy version/hash; version change invalidates pending approvals.
++- **Ambiguous-request rejection:** missing, contradictory, or unclassifiable requests deny with redacted reason.
++- **Policy evaluation evidence:** redacted record containing classification, matched rule, policy version, decision, approval requirement, and hash references is written to AuditLedger.
++
++Failure states: `UnclassifiedAction`, `UnknownDataClass`, `UnknownDestination`, `PolicyVersionUnavailable`, `AmbiguousRequest`, `CanonicalSpecUnresolved`. All deny.
++
++## 5. C. OwnerApprovalService — `PROPOSED`
++
++Coverage:
++
++- **Explicit approval requests:** human-readable redacted summary for `G2` restricted disclosure, `G3`, `G4`, and `L2`; no side effect before explicit Owner decision.
++- **Parameter-hashed requests:** approval binds to SHA-256 of canonical redacted parameters (`IParameterHasher`).
++- **Approval expiration:** approvals expire; expired approvals deny.
++- **Cancellation and denial:** Owner cancellation, Owner denial, and emergency preemption invalidate pending approvals.
++- **Parameter mismatch detection:** recompute hash immediately before execution; mismatch denies.
++- **Revalidation immediately before execution:** recheck Owner state, policy version, expiry, single-use state, destination, and hash immediately before side effect.
++- **Owner preemption:** OwnerAuthorityGuard cancels/invalidates pending approvals on preemption.
++- **Prevention of self-approval:** AERON Core, agents, background services, and tool runners cannot approve their own requests; only explicit Owner decision can set approval state.
++
++Failure states: `Pending`, `Approved`, `Denied`, `Expired`, `Cancelled`, `Preempted`, `ParameterMismatch`, `PolicyVersionChanged`, `AlreadyUsed`. Only `Approved` plus successful immediate revalidation may proceed.
++
++## 6. D. AuditLedger — `PROPOSED`
++
++Coverage:
++
++- **Hash-chained audit records:** sequence, UTC time, actor, action classification, policy version, decision, approval hash, previous hash, entry hash, redacted outcome, redacted error code.
++- **Append-only persistence:** no update/delete path for committed records; corrections append compensating redacted records.
++- **SQLite WAL:** reuse existing `%LOCALAPPDATA%\Aeron\data` SQLite WAL, transactional migration, and checksum discipline.
++- **Tamper detection:** startup and CI verification recompute chain; missing, reordered, edited, or unredacted-secret entries fail verification.
++- **Secret redaction:** every field passes through `IRedactionFilter` before persistence; raw secrets never enter logs, prompts, memory, audit, approval UI, or backups.
++- **Audit verification on startup:** startup denies sensitive operations if chain verification fails.
++- **Recovery and failure handling:** preserve last verified chain head; deny new sensitive operations; append redacted failure record if storage is available; Owner-reviewed recovery only; no silent repair or truncation.
++
++Failure states: `ChainHeadUnavailable`, `ChainMismatch`, `WriteFailed`, `WALCorrupt`, `RedactionFailed`, `StorageUnavailable`. All deny sensitive operations.
++
++## 7. E. Windows Security Vault — `PROPOSED`
++
++Coverage:
++
++- **Windows DPAPI:** current-user DPAPI protection for local secret blobs; no raw secret in config.
++- **Windows Credential Manager:** current-user credential records for secret lifecycle where appropriate; no OmniRoute secret reads.
++- **Current-user protection:** DPAPI/Credential Manager scoped to the current Windows user; no machine-wide or cross-user secret exposure.
++- **Windows ACLs:** existing `WindowsAclHelper` / `%LOCALAPPDATA%\Aeron` current-user ACL protection; no `Documents` or OmniRoute directories.
++- **Secret lifecycle:** create/store, retrieve, rotate, delete, and fail-closed on missing/corrupt/unavailable secret state; no secret values in logs, prompts, memory, audit, or `aeron.config.json`.
++- **Backup and recovery constraints:** U-8R `Backup storage = Google Drive` is preserved, but backup design must use restricted private folder, explicit `G2`/`G4` approval, secret redaction, no raw secrets, ₹0 quota, and no unrestricted cloud sync. Backup of DPAPI-protected blobs requires an Owner-approved recovery procedure; no assumption that DPAPI secrets are portable across users/machines.
++- **Zero secrets in `aeron.config.json`:** `ConfigPolicyValidator` rejects inline credentials; config stores only non-secret references/identifiers.
++- **Third-party vault dependencies:** none proposed. Built-in Windows DPAPI/Credential Manager and free/OSS .NET libraries only. Any future third-party vault dependency would require explicit justification and Owner approval.
++
++Failure states: `VaultUnavailable`, `DecryptFailed`, `CredentialNotFound`, `ACLMismatch`, `InlineSecretRejected`, `BackupUnsafe`. All deny sensitive operations.
++
++## 8. Data flow
++
++1. Request enters from UI/Core/future agent boundary as untrusted `ActionRequest`.
++2. `IRedactionFilter` redacts any display/log payload.
++3. `IActionClassifier`, `IDataClassifier`, and `IDestinationValidator` produce typed classifications.
++4. `IPolicyVersionProvider` supplies current policy version/hash.
++5. `IPolicyDecisionEngine` evaluates default-deny across `G1`–`G4` / `L0`–`L3`.
++6. `IOwnerAuthorityGuard` checks Owner state/preemption and precedence.
++7. If consequential, `IOwnerApprovalService` creates a parameter-hashed explicit approval request.
++8. Immediately before execution, approval is revalidated and parameter hash recomputed.
++9. `IAuditLedger` appends redacted policy/approval/outcome evidence.
++10. Side effect executes only after all prior steps return allow/approved; otherwise fail closed.
++
++## 9. Failure-state summary
++
++Every unknown, missing, expired, mismatched, preempted, unredacted, tampered, or unresolved condition denies. Sensitive operations are blocked on audit-chain failure, policy-version mismatch, unresolved canonical spec, Owner preemption, approval mismatch, vault failure, or unsafe backup state.
++
++## 10. Acceptance criteria
++
++See `M2-ACCEPTANCE-CRITERIA.md`. No implementation or test execution occurred in this specification-development task.
++
++## 11. Status
++
++`PROPOSED / NOT IMPLEMENTATION`. Implementation remains blocked until Owner review and explicit `M2 BUILD` authorization.
+diff --git a/docs/specifications/M2/SECURITY-THREAT-MODEL.md b/docs/specifications/M2/SECURITY-THREAT-MODEL.md
+new file mode 100644
+index 0000000..1372f93
+--- /dev/null
++++ b/docs/specifications/M2/SECURITY-THREAT-MODEL.md
+@@ -0,0 +1,36 @@
++# M2 Security Kernel — Defensive Threat Model
++
++> Status: `PROPOSED / NOT IMPLEMENTATION`.  
++> Final pack status: `M2 SPECIFICATION — PROPOSED`.  
++> All content is defensive and focused on protecting AERON. No exploit instructions are provided.
++
++## 1. Scope
++
++This threat model covers the proposed M2 Security Kernel components: OwnerAuthorityGuard, PolicyDecisionEngine, OwnerApprovalService, parameter-hashing infrastructure, AuditLedger, and Windows Security Vault. It assumes AERON remains a native Windows .NET 10 LTS/WPF desktop application, remote-only inference, ₹0 budget, OmniRoute untouched, no local model weights/runtimes, no paid API fallback, no skill scripts, and ultimate Owner authority.
++
++## 2. Threat matrix
++
++| Threat | Attack surface | Security objective | Prevention | Detection | Recovery | Required automated tests |
++|---|---|---|---|---|---|---|
++| Malicious or compromised agents | Agent-to-agent messages, task requests, delegated calls, prompt/tool payloads | Prevent any agent from bypassing Owner authority or policy | Bounded authorization inheritance; OwnerAuthorityGuard as non-bypassable choke point; default deny; no third-party agent framework; agent output never treated as policy | AuditLedger records actor, agent chain, policy version, decision, and denial reason; redaction applied | Owner preemption invalidates pending approvals and denies new consequential actions; quarantine proposed for future implementation | Agent inheritance tests; conflicting-instruction precedence tests; Owner preemption tests; no-direct-guard-bypass architecture tests |
++| Prompt injection | Remote model output, local documents, user-provided text, memory/context, tool results | Prevent untrusted text from becoming authority or policy | Treat all text as untrusted data; deterministic PolicyDecisionEngine separate from model/agent reasoning; explicit action classification; deny ambiguous requests | Policy-evaluation evidence and redacted logs record attempted classification and denial | Deny action; preserve audit record; require fresh explicit Owner request/approval | Prompt-injection-as-data tests; no-policy-elevation tests; ambiguous-request rejection tests; redaction tests |
++| Unauthorized tool execution | Future compiled tool registry, scheduled actions, external process launch, local file writes | Ensure no consequential side effect without policy decision and approval | Default-deny; `L2`/`G3`/`G4` approval gates; parameter hash; revalidation immediately before execution; no skill scripts | AuditLedger records request, decision, approval hash, and outcome | Deny on missing/expired/cancelled/mismatched approval; Owner preemption cancels pending work | Tool-execution gate tests; approval-before-side-effect tests; mismatch tests; skill-script ban tests |
++| Privilege escalation | Policy files, configuration, role/delegation claims, Owner-state manipulation | Preserve Owner supremacy and least privilege | Owner authority non-delegable; policy versioning; current-user Windows ACLs; no inline credentials; `L3` hard-denied actions; fail closed on missing policy state | Startup audit verification; config-policy tests; audit chain verification; redacted denial logs | Deny on policy-version mismatch or unknown role; restore last verified policy version after Owner review | Privilege-escalation unit tests; policy-version mismatch tests; config invariant tests; ACL/path tests |
++| Approval replay | Reused approval IDs, captured approval tokens, duplicate execution, delayed scheduled execution | One approval may authorize only one exact action | Unique approval ID, nonce, expiry, exact parameter hash, single-use state, revalidation immediately before execution | AuditLedger detects duplicate approval ID/hash reuse; redacted replay-denial record | Deny replay; require new explicit Owner approval | Replay tests; duplicate-ID tests; expired-approval tests; single-use state tests |
++| Parameter tampering | Action payloads, destination fields, data classification, scheduling parameters, serialized requests | Bind approval to exact intended parameters | Canonical redacted serialization; SHA-256 parameter hash; recompute before side effect; fail closed on mismatch | Parameter-mismatch audit events; policy-evaluation evidence mismatch | Deny execution; preserve original and recomputed hashes in redacted audit record | Hash determinism tests; field-order tests; Unicode/number/date canonicalization tests; mismatch fail-closed tests |
++| Secret leakage | `aeron.config.json`, logs, prompts, memory, approval UI, audit records, backups, exceptions | Zero secret exposure in configs, logs, prompts, memory, or backups | `RedactionFilter`/`RedactingLogger` reuse; `ConfigPolicyValidator`; DPAPI/Credential Manager vault; zero secrets in `aeron.config.json`; Windows ACLs; no raw secret in audit/hash input | Redaction tests; config rejection tests; audit/log secret scans; backup content checks | Deny secret-bearing action; rotate/delete secret through Owner-approved vault lifecycle; redact retained records | Existing redaction tests extended; nested-exception tests; structured-property tests; vault round-trip tests; zero-secret config tests |
++| Audit-log tampering | SQLite WAL files, audit table, backup copies, startup verification | Tamper-evident, append-only, recoverable audit trail | Hash chain with previous/current hashes; append-only persistence; SQLite WAL; current-user ACLs; redaction before write | Startup chain verification; tamper detection; CI chain verification; mismatch alerts in redacted logs | Deny new sensitive operations on chain failure; preserve last verified chain head; Owner-reviewed recovery; no silent repair | Chain-of-custody tests; deletion/reorder/edit tamper tests; startup verification tests; WAL rollback tests |
++| Unauthorized device access | Device paths, external drives, Windows shell/process launch, clipboard, USB/peripheral access | Prevent device access outside `L0`/`L1` or without `L2` approval | Default-deny device classification; `L3` hard-deny for forbidden local actions; destination validation; ACL/path isolation; no OmniRoute modification | AuditLedger device-access denials; policy-evaluation evidence; redacted path logging | Deny access; Owner preemption; no automatic retry | Device-path classification tests; `L2` approval tests; `L3` hard-deny tests; path traversal/normalization tests |
++| Backup exposure | Google Drive backup selected by U-8R, local backup files, exported logs/config/audit data | Protect backup confidentiality and integrity without changing the confirmed storage choice | U-8R `Backup storage = Google Drive` preserved; proposed restricted private folder, explicit `G2`/`G4` approval, secret redaction, no raw secrets in backup, ₹0 quota, C-12 isolation, no personal filenames/private `Documents` listings | Backup content checks; audit of backup operations; redaction scans; retention/permission checks | Deny unsafe backup; quarantine exposed artifact after Owner review; rotate secrets if exposure confirmed | Backup redaction tests; no-secret config/log/audit tests; permission/retention tests; no paid-storage tests |
++| Application crashes during sensitive operations | Approval state, SQLite WAL writes, hash-chain append, vault write, execution preflight | Never partially execute or silently lose audit/approval integrity | Transactional approval/audit writes; revalidation immediately before execution; fail-closed startup verification; idempotent execution boundary; last verified chain head | Crash-recovery tests; WAL integrity checks; duplicate/outcome reconciliation; redacted failure logs | Deny uncertain operation; recover last verified state; require new explicit Owner approval for unresolved in-flight action | Crash-injection tests for approval/audit/vault; WAL rollback tests; startup verification tests; no duplicate side-effect tests |
++
++## 3. Test principles
++
++- Synthetic secrets only; no real credentials, tokens, or API keys in tests, logs, CI output, or fixtures.
++- Windows-specific vault/ACL tests require a Windows runner or APEX.
++- All tests are proposed for future M2 BUILD; none were implemented or run here.
++- Every failure state must fail closed and produce a redacted audit record where storage is available.
++
++## 4. Status
++
++`PROPOSED / NOT IMPLEMENTATION`. Implementation remains blocked until Owner review and explicit `M2 BUILD` authorization.
+diff --git a/docs/specifications/M2/SOURCE-AND-PROVENANCE-REGISTER.md b/docs/specifications/M2/SOURCE-AND-PROVENANCE-REGISTER.md
+new file mode 100644
+index 0000000..5a90038
+--- /dev/null
++++ b/docs/specifications/M2/SOURCE-AND-PROVENANCE-REGISTER.md
+@@ -0,0 +1,96 @@
++# Source and Provenance Register
++
++> Purpose: preserve original source references, version information, and exact recovered wording.  
++> No secrets, tokens, API keys, personal filenames, or private `Documents` listings are recorded.
++
++## 1. Owner request
++
++| Field | Value |
++|---|---|
++| Source | `AERON SEASON 2 — M2 GOVERNANCE SPECIFICATION RECONSTRUCTION`, current conversation message |
++| Owner | Aditya |
++| Lead Builder | Arena Agent |
++| Technical Architect | GPT-6 |
++| Session date | 2026-11-18 UTC |
++| Version | conversation message `v1`; no external file ID or signature supplied |
++| Recovered exact decisions | Ten U-8R selections and architectural constraints, recorded in `README.md` and `U-08R.md`. |
++
++## 2. Local repository source versions
++
++| Path | Git blob SHA | SHA-256 | Version / notes |
++|---|---|---|---|
++| `docs/governance/CONSTRAINTS.md` | `57f9cb264df91f946d10c6b59f1886cc6828ac42` | `4e55057ea0afa91df966a47f39714a778a275be5eb562d4fdbaa2d8934ac0b37` | Base `24d0804…`; PR head `857b320…` identical for governance docs. |
++| `docs/governance/DECISION_LEDGER.md` | `be7efb3a053842b92f502a44e438c74740f16115` | `f2518c67199cadc9975a444a82a5ce8a0aa1765f22caeb173bc38963cb68ae64` | Locally modified in prior task to record D-M1-06; uncommitted on authorized branch. |
++| `docs/governance/U-01-TO-U-07.md` | `4598aa24346a09a177311f2ec49a6d40af60e9d8` | `eeb6ca22b57ff834deb231297e5d8a123de5ae926b0c3bedd2dd14154837565b` | Placeholder; canonical bodies `UNRESOLVED`. |
++| `docs/governance/U-08-ORIGINAL.md` | `5f72b9c924a7ac09598893ed55a34268de3a426e` | `5097620a6ea4be13997fb1b5e8c5f8a3757134d2054d6d838350bbbadae26a1f` | Original U-8 placeholder. |
++| `docs/governance/U-08R-REPLACEMENT.md` | `422a0c53e72a7b0044e48e5beb0c494c0599a0de` | `6441777ef42f80820b20a512fbbdad9fcfd22a1a76ab95f0df6f6ce3f5ee92ff` | Replacement U-8R placeholder. |
++| `docs/governance/ADR-AUTH-001.md` | `aa7e8a511ff8e9ee84b10017ca8def6925a9b461` | `4d9a1391d87f0c535d1cf7459a46aad46782aa33e9e0ef78a0b31d831bb1a983` | Confirmed mandate / unresolved verbatim text. |
++| `docs/governance/ADR-AUTH-002.md` | `f568793d402e9c9f3a77de759e1d21378a0af437` | `bc9402bb648764373204dac0a708ab58041d15f47b4a1f780fef3016e9426200` | Confirmed rules / unresolved verbatim text. |
++| `docs/governance/ADR-AUTH-003.md` | `0fc6102e32bfc5b7e77713e829fbdf900fe61dc0` | `8434cca72cb3dab7bd45a87b11a175fed431f0e74a285036814e93b0063cbcca` | Confirmed rules / unresolved verbatim text. |
++| `docs/architecture/BLUEPRINT.md` | `ae37f50170faa6d44030363e702e0a6f0c1e082f` | `2b65557b486afb0a838763abbcbb77610723f04dbfe7ba03286a6d7b6fdfd6ca` | M2 Security Kernel roadmap; M3 OmniRoute dependency. |
++| `docs/milestones/M1-FOUNDATION.md` | `d38b26f9a36d7db7382c5bd05803d98aa1476bb5` | `0b914e03cb60c6923eebb77e78dc358436f8642a0f28e6c6818b9c6aaf64a1ed` | Gate separation; no M2 approval/vault engine. |
++| `docs/milestones/M2-PREPARATION.md` | `8bcb52e200051ca851a88abff40e9aae7e7c4807` | `e2b84ac8db9fd73fad94d410ccb543621c2808d0c3305bc8b4b44171506f087d` | Prior preparation report; preserved, not modified in this task. |
++| `README.md` | `cb854786d10a0e471343099b7add174e121527ce` | `1b0c278df15dbbbc4b4bd7976e7ba4a786cde07e01bf39de79cf5b3a0b3d4637` | M1 architecture/budget constraints. |
++
++## 3. GitHub remote refs
++
++Direct mirror/API inspection in the prior and current tasks found seven unique `aeron-core` refs. All six canonical-doc blobs were identical across:
++
++- `refs/heads/arena/14c8988d-aeron-core` → `1a32b5b399839ca61d102ff33fbccae67a35b76d`
++- `refs/heads/arena/8ed7a07b-aeron-core` / `refs/pull/1/head` → `ffcabbb2c5dc9beb675211b02412b17fa7f8c973`
++- `refs/heads/arena/9c2318d0-aeron-core` → `5ea7e410f70579893be99c66d04b4e01902e5b9d`
++- `refs/heads/fix/m1-tray-lifecycle` / `refs/pull/3/head` → `857b3203fea13239c397113298e8b41b1dc67f93`
++- `refs/heads/main` → `24d0804b445b429909dd16068da7e00cccc603a0`
++- `refs/pull/1/merge` → `90651bdab415b20a8cab3e65327868b9837be105`
++- `refs/pull/3/merge` → `19e7892d0bd709972b6234b9a7af9e35e4c6b910`
++
++Accessible owner repositories scanned: `aeron-core`, `avenox-website`, `brainrot-arena`, `museum-of-unfinished-days-`, `shadow-protocol`, `the-last-signal`, `veilbreak-`, `ZOE`. Exact U/ADR/U-8R option-source phrases matched only existing `aeron-core` docs/tests/scripts; other repositories had no relevant matches. `ZOE` had no refs in the mirror scan.
++
++## 4. Connected knowledge sources
++
++| Source | Search result | Recovered source/version |
++|---|---|---|
++| Google Drive / Google Docs | Exact `ADR-AUTH-001/002/003`, `OwnerAuthorityGuard`, `U-08R-REPLACEMENT`, and `U-8R` document-type full-text searches returned no canonical AERON specs. Broad full-text queries returned unrelated JS/JSON/OmniRoute source artifacts. | `AVENOX Ecosystem Master Blueprint (Working Copy)` Google Doc ID `1HYoxZsQoMISa8ZrxQUWGMh3FwPdnuJBdSWchghw1gow`, version `8`, created `2026-11-18T17:19:51.996Z`, modified `2026-11-18T17:20:18.661Z`; document version `1.0 | 18 November 2026`. |
++| Google Drive DOCX | Same blueprint in Word form. | `AVENOX_Ecosystem_Master_Blueprint_v1.0.docx` ID `1AbTEXsWCaD3N23Se2bYswcvnUNfIYrrG`, version `4`, created/modified `2026-11-18T17:18:34.410Z`; document version `1.0 | 18 November 2026`; size `41684` bytes; text extraction complete. |
++| Gmail | Zero messages for U-8R / option / canonical / attachment queries; spam/trash included. | No source/version to record. |
++| Notion | Zero relevant results for `U-8R`, `Authority policy`, `Backup scope`, `Backup storage`, `Controlled Evolution`, `ADR-AUTH-001`; generic `Option C` returned default onboarding pages only. | No source/version to record. |
++| Google Calendar | Zero events for `U-8R`, `Authority policy`, `Backup storage`, `AERON Season 2`. | No source/version to record. |
++| GitHub issues/PRs/comments/reviews | Zero exact matches for `Authority policy`, `Backup scope`, `Backup storage Google Drive`, `U-8R`, and canonical U/ADR phrases. PR #1 body only lists governance files added. | No source/version to record. |
++
++## 5. Exact recovered AVENOX/AOS wording (`RECOVERED` context only)
++
++From the Google Docs working copy and matching DOCX, document version `1.0 | 18 November 2026`:
++
++> Founder: Aditya Kumar Nayak
++
++> Status: Private Development Phase
++
++> Document Version: 1.0 | 18 November 2026
++
++> AOS is the proposed operational intelligence layer for coordinating AI-assisted work across AVENOX. It is an agreed architecture and is not yet fully implemented.
++
++> Founder (You) — Founder and final authority
++
++> OpenHuman — Personal AI assistant; proposed AI Co-Founder / COO role
++
++> Hermes — Marketing Director
++
++> Arena Agent — Main Builder
++
++> GPT-6 — Strategy and Technology Advisor
++
++> Gemini — Shared AI resource
++
++> Operating principle: each AI system has a distinct responsibility and works within defined permissions. The Founder retains final authority. External actions, spending, publishing, account changes, legal commitments and other consequential decisions require explicit human approval.
++
++> Keep AI roles distinct; avoid duplicate authority and uncontrolled agent-to-agent actions.
++
++> Require human approval for external commitments, spending, publishing, account access and legal matters.
++
++Boundary: this is broader AVENOX ecosystem/AOS context, not AERON historical U-8R option definitions and not ADR-AUTH canonical clauses. The native Google Doc contains no `U-8R`, `Authority policy`, `Backup scope`, `Option C`, `Option D`, or `Option E` matches.
++
++## 6. Unrecovered material
++
++- Exact canonical wording for U-1…U-7, original U-8, replacement U-8R, and ADR-AUTH-001…003: `UNRESOLVED`.
++- Original U-8R option descriptions/explanations for `C`, `D`, `E`: `UNRESOLVED`.
++- `Options.png` and OmniRoute `decisions`/`options` folder artifacts were not treated as AERON canonical evidence; filename/folder name alone is not a recovered specification. No private filenames or `Documents` listings are reproduced.
+diff --git a/docs/specifications/M2/U-01.md b/docs/specifications/M2/U-01.md
+new file mode 100644
+index 0000000..dfd92f7
+--- /dev/null
++++ b/docs/specifications/M2/U-01.md
+@@ -0,0 +1,50 @@
++# U-1 — Controlled Evolution
++
++> Owner-review state: `PROPOSED` with `CONFIRMED` principle / `UNRESOLVED` canonical body.  
++> Classification: `PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW` for all newly drafted wording below.  
++> This document is **not** an original historical specification.
++
++## 1. Source and version
++
++- Source: `docs/governance/U-01-TO-U-07.md`, blob `4598aa24346a09a177311f2ec49a6d40af60e9d8`.
++- Version: `studioavenox-ux/aeron-core` at base commit `24d0804b445b429909dd16068da7e00cccc603a0` and PR #3 head `857b3203fea13239c397113298e8b41b1dc67f93`; blob SHAs identical across all seven unique remote refs inspected.
++- Prior audit: connected Notion, Google Docs, and Google Drive contained zero uploaded canonical text files for `U-1` through `U-7` during greenfield initialization on `2026-11-17`.
++
++## 2. Recovered / confirmed historical baseline
++
++Exact repository wording recovered:
++
++> **Core Principle (`CONFIRMED`):** AERON evolves exclusively through bounded, transparent, auditable proposals subject to explicit Project Owner authorization. Silent self-modification of permissions, governance rules, code, or safety boundaries is forbidden.
++
++> **Canonical Specification Body:** `UNRESOLVED` — awaiting upload/insertion prior to Milestone 7 implementation.
++
++Boundary: the quoted core principle is a confirmed principle, not exact historical canonical wording. The canonical specification body is `UNRESOLVED`.
++
++## 3. PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW
++
++The following is newly drafted M2-relevant interpretation for review. It is not historical text and must not be treated as a confirmed Owner decision.
++
++- M2 security policy and code changes must be represented as reviewable proposals.
++- No agent or subsystem may silently mutate permissions, policy version, audit configuration, or safety boundaries.
++- OwnerAuthorityGuard is the proposed non-bypassable enforcement boundary for M2.
++- Any controlled-evolution action classified `L2` must pass OwnerApprovalService before execution.
++
++## 4. Unresolved questions
++
++- Exact canonical body, proposal format, approval thresholds, and evolution record schema.
++- Whether U-1 canonical text imposes any M2-specific policy-file format.
++- Whether Owner-approved specification reconstruction itself counts as a controlled-evolution proposal.
++
++## 5. Dependencies with other specifications
++
++- `ADR-AUTH-001.md` for ultimate Owner authority.
++- `ADR-AUTH-002.md` for `G1`–`G4` / `L0`–`L3` boundaries.
++- `ADR-AUTH-003.md` for consequential approval/audit integrity.
++- `U-08R.md` for existing U-8R selections; `U-08.md` remains separate.
++
++## 6. Status
++
++- Exact canonical text: `UNRESOLVED`.
++- Confirmed principle: `CONFIRMED`.
++- Newly drafted reconstruction: `PROPOSED`.
++- Implementation: `NOT AUTHORIZED`.
+diff --git a/docs/specifications/M2/U-02.md b/docs/specifications/M2/U-02.md
+new file mode 100644
+index 0000000..6c054ff
+--- /dev/null
++++ b/docs/specifications/M2/U-02.md
+@@ -0,0 +1,48 @@
++# U-2 — Intelligent Adaptive Modes
++
++> Owner-review state: `PROPOSED` with `CONFIRMED` principle / `UNRESOLVED` canonical body.  
++> Classification: `PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW` for all newly drafted wording below.  
++> This document is **not** an original historical specification.
++
++## 1. Source and version
++
++- Source: `docs/governance/U-01-TO-U-07.md`, blob `4598aa24346a09a177311f2ec49a6d40af60e9d8`.
++- Version: `studioavenox-ux/aeron-core` at base commit `24d0804b445b429909dd16068da7e00cccc603a0` and PR #3 head `857b3203fea13239c397113298e8b41b1dc67f93`; blob SHAs identical across all seven unique remote refs inspected.
++- Prior audit: connected Notion, Google Docs, and Google Drive contained zero uploaded canonical text files for `U-1` through `U-7` during greenfield initialization on `2026-11-17`.
++
++## 2. Recovered / confirmed historical baseline
++
++Exact repository wording recovered:
++
++> **Core Principle (`CONFIRMED`):** AERON adapts operational behavior, interruption posture, and bounded autonomy across intelligent context-sensitive modes while always honoring Project Owner locks and overrides.
++
++> **Canonical Specification Body (exact mode catalog & transition rules):** `UNRESOLVED` — awaiting confirmation prior to Milestone 4 implementation.
++
++Boundary: the quoted core principle is a confirmed principle, not exact historical canonical wording. The canonical specification body is `UNRESOLVED`.
++
++## 3. PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW
++
++The following is newly drafted M2-relevant interpretation for review. It is not historical text and must not be treated as a confirmed Owner decision.
++
++- M2 should not assume any adaptive-mode catalog or transition wording.
++- Any future mode change that affects authority, approval, or audit behavior must be policy-versioned and fail closed while canonical rules are unresolved.
++- PolicyDecisionEngine should treat missing mode/transition definitions as ambiguous input and deny.
++
++## 4. Unresolved questions
++
++- Exact mode catalog and transition rules.
++- Whether any mode can alter approval or emergency-shutdown behavior.
++- Whether Owner locks supersede all mode transitions.
++
++## 5. Dependencies with other specifications
++
++- `ADR-AUTH-001.md` for Owner preemption.
++- `ADR-AUTH-002.md` for default-deny policy.
++- `SECURITY-ARCHITECTURE.md` for ambiguous-request rejection.
++
++## 6. Status
++
++- Exact canonical text: `UNRESOLVED`.
++- Confirmed principle: `CONFIRMED`.
++- Newly drafted reconstruction: `PROPOSED`.
++- Implementation: `NOT AUTHORIZED`.
+diff --git a/docs/specifications/M2/U-03.md b/docs/specifications/M2/U-03.md
+new file mode 100644
+index 0000000..25518a0
+--- /dev/null
++++ b/docs/specifications/M2/U-03.md
+@@ -0,0 +1,48 @@
++# U-3 — Dynamic Prioritization
++
++> Owner-review state: `PROPOSED` with `CONFIRMED` principle / `UNRESOLVED` canonical body.  
++> Classification: `PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW` for all newly drafted wording below.  
++> This document is **not** an original historical specification.
++
++## 1. Source and version
++
++- Source: `docs/governance/U-01-TO-U-07.md`, blob `4598aa24346a09a177311f2ec49a6d40af60e9d8`.
++- Version: `studioavenox-ux/aeron-core` at base commit `24d0804b445b429909dd16068da7e00cccc603a0` and PR #3 head `857b3203fea13239c397113298e8b41b1dc67f93`; blob SHAs identical across all seven unique remote refs inspected.
++- Prior audit: connected Notion, Google Docs, and Google Drive contained zero uploaded canonical text files for `U-1` through `U-7` during greenfield initialization on `2026-11-17`.
++
++## 2. Recovered / confirmed historical baseline
++
++Exact repository wording recovered:
++
++> **Core Principle (`CONFIRMED`):** AERON continuously prioritizes objectives and tasks according to urgency, impact, dependencies, deadlines, and active Project Owner direction.
++
++> **Canonical Specification Body (exact scoring rules):** `UNRESOLVED` — awaiting confirmation prior to Milestone 7 implementation.
++
++Boundary: the quoted core principle is a confirmed principle, not exact historical canonical wording. The canonical specification body is `UNRESOLVED`.
++
++## 3. PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW
++
++The following is newly drafted M2-relevant interpretation for review. It is not historical text and must not be treated as a confirmed Owner decision.
++
++- M2 must not derive permission or approval priority from unrecovered scoring rules.
++- Security decisions must be deterministic and independent of task-urgency scoring.
++- Owner pause/cancel/emergency-stop must preempt any priority calculation.
++
++## 4. Unresolved questions
++
++- Exact scoring formula and weighting.
++- Whether urgency can ever reduce approval requirements.
++- Whether canonical U-3 contains any M2 security-kernel clause.
++
++## 5. Dependencies with other specifications
++
++- `ADR-AUTH-001.md` for precedence.
++- `ADR-AUTH-003.md` for approval/preemption/audit.
++- `SECURITY-ARCHITECTURE.md` for deterministic evaluation.
++
++## 6. Status
++
++- Exact canonical text: `UNRESOLVED`.
++- Confirmed principle: `CONFIRMED`.
++- Newly drafted reconstruction: `PROPOSED`.
++- Implementation: `NOT AUTHORIZED`.
+diff --git a/docs/specifications/M2/U-04.md b/docs/specifications/M2/U-04.md
+new file mode 100644
+index 0000000..1ba5c72
+--- /dev/null
++++ b/docs/specifications/M2/U-04.md
+@@ -0,0 +1,48 @@
++# U-4 — Adaptive Scheduling
++
++> Owner-review state: `PROPOSED` with `CONFIRMED` principle / `UNRESOLVED` canonical body.  
++> Classification: `PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW` for all newly drafted wording below.  
++> This document is **not** an original historical specification.
++
++## 1. Source and version
++
++- Source: `docs/governance/U-01-TO-U-07.md`, blob `4598aa24346a09a177311f2ec49a6d40af60e9d8`.
++- Version: `studioavenox-ux/aeron-core` at base commit `24d0804b445b429909dd16068da7e00cccc603a0` and PR #3 head `857b3203fea13239c397113298e8b41b1dc67f93`; blob SHAs identical across all seven unique remote refs inspected.
++- Prior audit: connected Notion, Google Docs, and Google Drive contained zero uploaded canonical text files for `U-1` through `U-7` during greenfield initialization on `2026-11-17`.
++
++## 2. Recovered / confirmed historical baseline
++
++Exact repository wording recovered:
++
++> **Core Principle (`CONFIRMED`):** AERON schedules, defers, and resumes work adaptively in accordance with active mode (`U-2`), priority (`U-3`), host load, and approved zero-cost gateway quota availability.
++
++> **Canonical Specification Body (exact scheduling rules):** `UNRESOLVED` — awaiting confirmation prior to Milestone 7 implementation.
++
++Boundary: the quoted core principle is a confirmed principle, not exact historical canonical wording. The canonical specification body is `UNRESOLVED`.
++
++## 3. PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW
++
++The following is newly drafted M2-relevant interpretation for review. It is not historical text and must not be treated as a confirmed Owner decision.
++
++- M2 should not implement adaptive scheduling or persistent schedule changes.
++- Any future scheduled consequential action remains `L2` and requires explicit Owner approval.
++- Approval records must include the scheduled action parameters and revalidate immediately before execution.
++
++## 4. Unresolved questions
++
++- Exact scheduling rules.
++- Whether scheduled actions use the same approval binding as immediate actions.
++- How host load and approved zero-cost quota interact with fail-closed behavior.
++
++## 5. Dependencies with other specifications
++
++- `U-02.md`, `U-03.md`.
++- `ADR-AUTH-002.md` for `L2` consequential local actions.
++- `ADR-AUTH-003.md` for approval failure modes.
++
++## 6. Status
++
++- Exact canonical text: `UNRESOLVED`.
++- Confirmed principle: `CONFIRMED`.
++- Newly drafted reconstruction: `PROPOSED`.
++- Implementation: `NOT AUTHORIZED`.
+diff --git a/docs/specifications/M2/U-05.md b/docs/specifications/M2/U-05.md
+new file mode 100644
+index 0000000..2bbb5a3
+--- /dev/null
++++ b/docs/specifications/M2/U-05.md
+@@ -0,0 +1,48 @@
++# U-5 — Adaptive Notifications
++
++> Owner-review state: `PROPOSED` with `CONFIRMED` principle / `UNRESOLVED` canonical body.  
++> Classification: `PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW` for all newly drafted wording below.  
++> This document is **not** an original historical specification.
++
++## 1. Source and version
++
++- Source: `docs/governance/U-01-TO-U-07.md`, blob `4598aa24346a09a177311f2ec49a6d40af60e9d8`.
++- Version: `studioavenox-ux/aeron-core` at base commit `24d0804b445b429909dd16068da7e00cccc603a0` and PR #3 head `857b3203fea13239c397113298e8b41b1dc67f93`; blob SHAs identical across all seven unique remote refs inspected.
++- Prior audit: connected Notion, Google Docs, and Google Drive contained zero uploaded canonical text files for `U-1` through `U-7` during greenfield initialization on `2026-11-17`.
++
++## 2. Recovered / confirmed historical baseline
++
++Exact repository wording recovered:
++
++> **Core Principle (`CONFIRMED`):** AERON delivers native Windows notifications adaptively—suppressing, batching, or escalating alerts to protect Project Owner focus while ensuring urgent approvals and safety events remain visible.
++
++> **Canonical Specification Body (exact notification thresholds):** `UNRESOLVED` — awaiting confirmation prior to Milestone 7 implementation.
++
++Boundary: the quoted core principle is a confirmed principle, not exact historical canonical wording. The canonical specification body is `UNRESOLVED`.
++
++## 3. PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW
++
++The following is newly drafted M2-relevant interpretation for review. It is not historical text and must not be treated as a confirmed Owner decision.
++
++- M2 approval UI must not suppress or batch away a pending consequential approval.
++- Security, denial, expiry, cancellation, emergency shutdown, and audit-failure notices are proposed hard-visible events.
++- Any notification escalation that causes an external communication remains `G3` and requires approval.
++
++## 4. Unresolved questions
++
++- Exact thresholds for suppression, batching, and escalation.
++- Whether any safety event may be deferred.
++- Whether external notification channels are permitted under G3.
++
++## 5. Dependencies with other specifications
++
++- `ADR-AUTH-002.md` for `G3`.
++- `ADR-AUTH-003.md` for approval and audit events.
++- `SECURITY-ARCHITECTURE.md` for approval and failure states.
++
++## 6. Status
++
++- Exact canonical text: `UNRESOLVED`.
++- Confirmed principle: `CONFIRMED`.
++- Newly drafted reconstruction: `PROPOSED`.
++- Implementation: `NOT AUTHORIZED`.
+diff --git a/docs/specifications/M2/U-06.md b/docs/specifications/M2/U-06.md
+new file mode 100644
+index 0000000..e977f17
+--- /dev/null
++++ b/docs/specifications/M2/U-06.md
+@@ -0,0 +1,48 @@
++# U-6 — Human-Like Agent Team, Avatars, Autonomy, Communication & Personalities
++
++> Owner-review state: `PROPOSED` with `CONFIRMED` principle / `UNRESOLVED` canonical body.  
++> Classification: `PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW` for all newly drafted wording below.  
++> This document is **not** an original historical specification.
++
++## 1. Source and version
++
++- Source: `docs/governance/U-01-TO-U-07.md`, blob `4598aa24346a09a177311f2ec49a6d40af60e9d8`.
++- Version: `studioavenox-ux/aeron-core` at base commit `24d0804b445b429909dd16068da7e00cccc603a0` and PR #3 head `857b3203fea13239c397113298e8b41b1dc67f93`; blob SHAs identical across all seven unique remote refs inspected.
++- Prior audit: connected Notion, Google Docs, and Google Drive contained zero uploaded canonical text files for `U-1` through `U-7` during greenfield initialization on `2026-11-17`.
++
++## 2. Recovered / confirmed historical baseline
++
++Exact repository wording recovered:
++
++> **Core Principle (`CONFIRMED`):** AERON coordinates a team of specialized human-like AI agents with realistic avatars, bounded controlled autonomy, structured intelligent inter-agent communication, and bounded adaptive personalities under AERON Core leadership and ultimate Project Owner authority—built with zero third-party agent frameworks.
++
++> **Canonical Specification Body (exact v1 specialist roster, personality parameters, and avatar/HQ spec):** `UNRESOLVED` — awaiting confirmation prior to Milestones 6 and 10.
++
++Boundary: the quoted core principle is a confirmed principle, not exact historical canonical wording. The canonical specification body is `UNRESOLVED`.
++
++## 3. PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW
++
++The following is newly drafted M2-relevant interpretation for review. It is not historical text and must not be treated as a confirmed Owner decision.
++
++- M2 must not create agents, agent frameworks, avatars, or virtual HQ modules.
++- Authorization inheritance across any future agents must be bounded by OwnerAuthorityGuard and never exceed Owner limits.
++- Agent-to-agent instructions are untrusted for authority purposes; conflicts resolve to Owner preemption and default deny.
++
++## 4. Unresolved questions
++
++- Exact v1 roster, personality parameters, avatar/HQ specification.
++- Whether any agent may inherit or delegate Owner authority.
++- Exact inter-agent communication trust model.
++
++## 5. Dependencies with other specifications
++
++- `ADR-AUTH-001.md` for ultimate Owner authority and bounded delegates.
++- `SOURCE-AND-PROVENANCE-REGISTER.md` for recovered AOS role context.
++- `SECURITY-ARCHITECTURE.md` for authorization inheritance and precedence.
++
++## 6. Status
++
++- Exact canonical text: `UNRESOLVED`.
++- Confirmed principle: `CONFIRMED`.
++- Newly drafted reconstruction: `PROPOSED`.
++- Implementation: `NOT AUTHORIZED`.
+diff --git a/docs/specifications/M2/U-07.md b/docs/specifications/M2/U-07.md
+new file mode 100644
+index 0000000..7114d5a
+--- /dev/null
++++ b/docs/specifications/M2/U-07.md
+@@ -0,0 +1,48 @@
++# U-7 — Complete Contextual Memory
++
++> Owner-review state: `PROPOSED` with `CONFIRMED` principle / `UNRESOLVED` canonical body.  
++> Classification: `PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW` for all newly drafted wording below.  
++> This document is **not** an original historical specification.
++
++## 1. Source and version
++
++- Source: `docs/governance/U-01-TO-U-07.md`, blob `4598aa24346a09a177311f2ec49a6d40af60e9d8`.
++- Version: `studioavenox-ux/aeron-core` at base commit `24d0804b445b429909dd16068da7e00cccc603a0` and PR #3 head `857b3203fea13239c397113298e8b41b1dc67f93`; blob SHAs identical across all seven unique remote refs inspected.
++- Prior audit: connected Notion, Google Docs, and Google Drive contained zero uploaded canonical text files for `U-1` through `U-7` during greenfield initialization on `2026-11-17`.
++
++## 2. Recovered / confirmed historical baseline
++
++Exact repository wording recovered:
++
++> **Core Principle (`CONFIRMED`):** AERON maintains persistent, structured contextual memory across sessions with provenance tracking, secret redaction (`C-12`), external disclosure classification (`G2`), and full Project Owner inspection, editing, and deletion rights.
++
++> **Canonical Specification Body (exact retention and retrieval rules):** `UNRESOLVED` — awaiting confirmation prior to Milestone 5 implementation.
++
++Boundary: the quoted core principle is a confirmed principle, not exact historical canonical wording. The canonical specification body is `UNRESOLVED`.
++
++## 3. PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW
++
++The following is newly drafted M2-relevant interpretation for review. It is not historical text and must not be treated as a confirmed Owner decision.
++
++- M2 must not implement the contextual-memory engine.
++- Any M2 audit or approval record is separate from contextual memory and must still be redacted and provenance-tracked.
++- No secret-bearing raw payload may enter memory, logs, prompts, approvals, or backups; C-12 remains fail-closed.
++
++## 4. Unresolved questions
++
++- Exact retention/retrieval rules.
++- Owner inspection/edit/delete workflow.
++- Whether audit records are copied into contextual memory and, if so, under what classification.
++
++## 5. Dependencies with other specifications
++
++- `ADR-AUTH-002.md` for `G2` data classification.
++- `ADR-AUTH-003.md` for secret-redacting audit trails.
++- `SECURITY-ARCHITECTURE.md` for redaction and AuditLedger.
++
++## 6. Status
++
++- Exact canonical text: `UNRESOLVED`.
++- Confirmed principle: `CONFIRMED`.
++- Newly drafted reconstruction: `PROPOSED`.
++- Implementation: `NOT AUTHORIZED`.
+diff --git a/docs/specifications/M2/U-08.md b/docs/specifications/M2/U-08.md
+new file mode 100644
+index 0000000..786d730
+--- /dev/null
++++ b/docs/specifications/M2/U-08.md
+@@ -0,0 +1,56 @@
++# Original U-8
++
++> Owner-review state: `UNRESOLVED` canonical text.  
++> Classification: historical record placeholder plus `PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW` for governance handling only.  
++> This file records **original Decision `U-8` only** and is strictly separate from replacement `U-8R`.
++
++## 1. Source and version
++
++- Source: `docs/governance/U-08-ORIGINAL.md`, blob `5f72b9c924a7ac09598893ed55a34268de3a426e`.
++- Version: `studioavenox-ux/aeron-core` at `24d0804b445b429909dd16068da7e00cccc603a0` and `857b3203fea13239c397113298e8b41b1dc67f93`; identical across all seven unique remote refs inspected.
++- Relationship source: `docs/governance/DECISION_LEDGER.md` and `docs/milestones/M1-FOUNDATION.md` require `U-8` and `U-8R` to remain separate.
++
++## 2. Recovered / confirmed historical baseline
++
++Exact repository wording recovered:
++
++> **Decision Identifier:** `U-8` *(Original)*
++
++> **Relationship Notice:** This file records **original Decision `U-8` only**. It is strictly distinct from replacement Decision `U-8R` recorded in `U-08R-REPLACEMENT.md` and must never be merged, conflated, or overwritten with `U-8R`.
++
++> **Recovery Status:** `UNRESOLVED`
++
++> **Audit Record (`VERIFIED` — 2026-11-17):** The canonical text of original Decision `U-8` was not present in the repository or in connected Notion, Google Docs, or Google Drive sources at greenfield initialization.
++
++> **Integrity Rule (`CONFIRMED`):** No decision text, scope, or rationale is guessed or invented here. The authoritative original `U-8` record will be inserted verbatim once provided by the Project Owner.
++
++Boundary: no original U-8 clause, scope, or rationale is recovered.
++
++## 3. PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW
++
++The following is newly drafted governance handling only. It is **not** a reconstruction of original U-8 clauses.
++
++- Preserve this file as the separate historical record for original `U-8`.
++- Do not copy `U-8R` selections, option letters, or backup-storage choices into this file.
++- If exact historical U-8 text becomes available, append it verbatim under a clearly labelled `RECOVERED` section with source and version; do not paraphrase into the historical section.
++- Until recovery, any M2 policy-finalization dependency on original U-8 remains `UNRESOLVED`.
++
++## 4. Unresolved questions
++
++- Exact original U-8 wording, decision scope, rationale, and date.
++- Whether original U-8 conflicts with or was superseded by U-8R; no assumption is made here.
++- Whether any U-8 clause affects M2 Security Kernel components.
++
++## 5. Dependencies with other specifications
++
++- `U-08R.md` is the separate replacement record; no conflation.
++- `DECISION-RECOVERY-MATRIX.md` records U-8 as `UNRESOLVED`.
++- `ADR-AUTH-001.md`–`ADR-AUTH-003.md` remain separate ADR-AUTH governance records.
++- `CONTRADICTION-REPORT.md` records the replacement-vs-original boundary.
++
++## 6. Status
++
++- Exact historical U-8 canonical text: `UNRESOLVED`.
++- Separation rule: `CONFIRMED`.
++- Newly drafted handling: `PROPOSED`.
++- Implementation: `NOT AUTHORIZED`.
+diff --git a/docs/specifications/M2/U-08R.md b/docs/specifications/M2/U-08R.md
+new file mode 100644
+index 0000000..42cd4b6
+--- /dev/null
++++ b/docs/specifications/M2/U-08R.md
+@@ -0,0 +1,89 @@
++# Replacement U-8R
++
++> Owner-review state: `CONFIRMED` selections / `UNRESOLVED` option definitions / `PROPOSED` reconstruction.  
++> Classification: existing Owner decisions plus `PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW` for newly drafted boundaries.  
++> This file records **replacement Decision `U-8R` only** and is strictly separate from original `U-8`.
++
++## 1. Source and version
++
++- Owner decision source: current Owner request `AERON SEASON 2 — M2 GOVERNANCE SPECIFICATION RECONSTRUCTION` in this conversation; session date 2026-11-18 UTC; conversation message version `v1`; no external file ID or signature supplied.
++- Placeholder source: `docs/governance/U-08R-REPLACEMENT.md`, blob `422a0c53e72a7b0044e48e5beb0c494c0599a0de`.
++- Repository version: `studioavenox-ux/aeron-core` at `24d0804b445b429909dd16068da7e00cccc603a0` and `857b3203fea13239c397113298e8b41b1dc67f93`; identical across all seven unique remote refs inspected.
++- Additional recovered context: `AVENOX Ecosystem Master Blueprint (Working Copy)` Google Doc, version `8`, created/modified `2026-11-18T17:19:51.996Z` / `2026-11-18T17:20:18.661Z`; and `AVENOX_Ecosystem_Master_Blueprint_v1.0.docx`, version `4`, created/modified `2026-11-18T17:18:34.410Z`. Both state document version `1.0 | 18 November 2026`.
++
++## 2. Recovered / confirmed historical baseline
++
++### 2.1 Existing U-8R selections (`CONFIRMED`)
++
++These are existing Owner decisions. Values are preserved unchanged.
++
++| Area | Existing selection |
++|---|---|
++| Authority policy | `C` |
++| Permission authority | `D` |
++| Authentication | `C` |
++| Encryption | `D` |
++| Data protection/privacy | `E` |
++| Emergency shutdown | `D` |
++| Activity logging/audit | `D` |
++| Device access/authorization | `D` |
++| Backup scope | `C` |
++| Backup storage | `Google Drive` |
++
++### 2.2 Exact placeholder wording recovered
++
++> **Decision Identifier:** `U-8R` *(Replacement)*
++
++> **Relationship Notice:** This file records **replacement Decision `U-8R` only**. It is kept strictly separate from the preserved historical record of original Decision `U-8` in `U-08-ORIGINAL.md`.
++
++> **Recovery Status:** `UNRESOLVED`
++
++> **Audit Record (`VERIFIED` — 2026-11-17):** The canonical text of replacement Decision `U-8R` was not present in the repository or in connected Notion, Google Docs, or Google Drive sources at greenfield initialization.
++
++> **Implementation Gate (`CONFIRMED`):** No clause of `U-8R` is fabricated. Before implementing any Milestone 2+ subsystem governed by `U-8R`, the authoritative `U-8R` specification must be supplied and confirmed by the Project Owner.
++
++### 2.3 Exact recovered AVENOX ecosystem context (`RECOVERED` context only)
++
++> **Founder (You)** — Founder and final authority
++
++> **Operating principle:** each AI system has a distinct responsibility and works within defined permissions. The Founder retains final authority. External actions, spending, publishing, account changes, legal commitments and other consequential decisions require explicit human approval.
++
++> **Keep AI roles distinct; avoid duplicate authority and uncontrolled agent-to-agent actions.**
++
++Boundary: this is broader AVENOX/AOS context, not an AERON U-8R canonical specification and not an option definition for `C`, `D`, or `E`.
++
++## 3. PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW
++
++The following is newly drafted M2-relevant structure. It does **not** define `C`, `D`, or `E` and does **not** change any selected value.
++
++- Treat the ten selection values as immutable `CONFIRMED` inputs for M2.
++- Treat every letter-only selection (`C`, `D`, `E`) as a token whose original option description and explanation are `UNRESOLVED`.
++- Do not map `C`, `D`, or `E` to any architecture behavior without the original option definition or explicit Owner approval of a `PROPOSED` mapping.
++- Treat `Backup storage = Google Drive` as a confirmed storage choice, not as authorization for unrestricted cloud sync, secret upload, paid storage, or OmniRoute modification.
++- Any Google Drive backup implementation must be reconciled with C-12, `G2`/`G4`, ₹0 budget, secret redaction, and explicit approval boundaries in `CONTRADICTION-REPORT.md`.
++- M2 Security Kernel components must be designed so U-8R option definitions can be inserted later without changing the confirmed selection values.
++
++## 4. Unresolved questions
++
++- Original option descriptions and explanations for `C`, `D`, and `E` for each letter-bearing area.
++- Exact version/date/source of the original U-8R option matrix.
++- Whether `Backup scope = C` has a recovered definition distinct from `Backup storage = Google Drive`.
++- Exact Google Drive backup boundary: restricted private folder, retention, encryption/secret handling, `G2`/`G4` approval requirements, ₹0 quota, and recovery procedure.
++- Whether any U-8R option definition imposes a vault, authentication, encryption, audit, shutdown, or device-access behavior not already captured by existing constraints.
++
++## 5. Dependencies with other specifications
++
++- `U-08.md` remains the separate original U-8 record.
++- `ADR-AUTH-001.md`–`ADR-AUTH-003.md` provide confirmed mandate/rules but not U-8R option definitions.
++- `SECURITY-ARCHITECTURE.md` uses U-8R selections only as immutable constraints, not inferred meanings.
++- `CONTRADICTION-REPORT.md` records the Google Drive / C-12 / G2-G4 boundary.
++- `OWNER-DECISION-REQUIRED.md` lists only genuinely missing inputs; it does not ask the Owner to restate the ten selections.
++
++## 6. Status
++
++- U-8R selection values: `CONFIRMED`.
++- Exact U-8R historical canonical wording: `UNRESOLVED`.
++- `C`/`D`/`E` definitions and explanations: `UNRESOLVED`.
++- Recovered AVENOX/AOS context: `RECOVERED` context only.
++- Newly drafted reconstruction: `PROPOSED`.
++- Implementation: `NOT AUTHORIZED`.

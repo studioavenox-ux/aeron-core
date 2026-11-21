@@ -1,0 +1,7 @@
+# Historical correction report — v1.0 ten-item summary
+
+`SUPERSEDED`: v1.0 incorrectly treated the following Owner-supplied summary as the complete U-8R decision set: Authority policy C; Permission authority D; Authentication C; Encryption D; Data protection/privacy E; Emergency shutdown D; Activity logging/audit D; Device access/authorization D; Backup scope C; Backup storage Google Drive. Preserve this list only as provenance, not as a decision mapping or substitute for the fifteen records.
+
+The Owner's v1.1 request explicitly provides fifteen numbered decisions and labels. These are retained separately and `CONFIRMED` in `U-08R.md`; no mapping is invented from the prior summary. In particular Shared Authority (U-8R.2), Shared Governance (U-8R.15), and the three authority ADRs remain distinct. Google Drive is a destination, not a numbered answer. The old assertion that no lettered labels were known is also `SUPERSEDED`; missing original questions and alternatives remain `UNRESOLVED` except U-8R.6's Owner-reported alternatives.
+
+The Owner reports GPT-6 retrieved and inspected the four historical texts in ChatGPT Library and compared the relevant records. Arena could not directly inspect or hash the files, so original bytes and exact versions are not independently verified. Owner-provided excerpts remain attributed to the clarification. Original U-8 is not altered or merged. Existing v1.0 patch `M2-SPEC-PACK.patch` remains unchanged as a prior snapshot; it is historical and must not be applied over v1.1.

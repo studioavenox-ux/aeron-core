@@ -4,9 +4,9 @@ using Aeron.Contracts;
 namespace Aeron.Security;
 
 /// <summary>
-/// Thread-safe, unconditional secret redaction engine for AERON logs, errors, and diagnostics.
-/// Ensures zero raw credentials, API keys, tokens, passwords, private keys, or registered
-/// secret values ever reach persistent logs or UI diagnostics.
+/// Thread-safe defense-in-depth redaction for AERON logs, errors, and diagnostics.
+/// Registered values and recognized patterns are scrubbed; unrecognized secrets must be
+/// excluded at their source rather than relying on pattern matching as a security boundary.
 /// </summary>
 public sealed class RedactionFilter : IRedactionFilter
 {
@@ -108,11 +108,6 @@ public sealed class RedactionFilter : IRedactionFilter
         }
 
         var trimmed = sensitiveValue.Trim();
-        if (trimmed.Length < MinimumRegisteredSecretLength ||
-            string.Equals(trimmed, RedactedPlaceholder, StringComparison.Ordinal))
-        {
-            return;
-        }
 
         lock (_sync)
         {
@@ -153,8 +148,8 @@ public sealed class RedactionFilter : IRedactionFilter
         }
         catch (RegexMatchTimeoutException)
         {
-            // Fail closed: never return unredacted input on pattern timeout.
-            return RedactedPlaceholder;
+            // The marker itself might contain a registered value; scrub it as well.
+            return ReplaceRegisteredSecrets(RedactedPlaceholder);
         }
     }
 
@@ -209,10 +204,20 @@ public sealed class RedactionFilter : IRedactionFilter
         var result = value;
         foreach (var secret in secrets)
         {
-            if (result.Contains(secret, StringComparison.Ordinal))
+            if (!result.Contains(secret, StringComparison.Ordinal))
             {
-                result = result.Replace(secret, RedactedPlaceholder, StringComparison.Ordinal);
+                continue;
             }
+
+            // A short secret can match ordinary prose or the replacement marker itself.
+            // Suppress the entire field instead of returning a marker that might contain it.
+            if (secret.Length < MinimumRegisteredSecretLength ||
+                RedactedPlaceholder.Contains(secret, StringComparison.Ordinal))
+            {
+                return string.Empty;
+            }
+
+            result = result.Replace(secret, RedactedPlaceholder, StringComparison.Ordinal);
         }
 
         return result;

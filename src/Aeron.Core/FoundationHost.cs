@@ -83,7 +83,8 @@ public sealed class AeronFoundationHost : IAsyncDisposable
         ISecureConfigStore configStore,
         ICoreEventBus eventBus,
         IAppLifecycle lifecycle,
-        IFoundationHealthService healthService)
+        IFoundationHealthService healthService,
+        ISecurityPolicy securityPolicy)
     {
         Paths = paths;
         RedactionFilter = redactionFilter;
@@ -92,6 +93,7 @@ public sealed class AeronFoundationHost : IAsyncDisposable
         EventBus = eventBus;
         Lifecycle = lifecycle;
         HealthService = healthService;
+        SecurityPolicy = securityPolicy;
     }
 
     public IAppPaths Paths { get; }
@@ -101,6 +103,11 @@ public sealed class AeronFoundationHost : IAsyncDisposable
     public ICoreEventBus EventBus { get; }
     public IAppLifecycle Lifecycle { get; }
     public IFoundationHealthService HealthService { get; }
+    /// <summary>
+    /// Denies access until a real trusted identity provider and grant store are wired.
+    /// This is not yet an action executor or an approval service.
+    /// </summary>
+    public ISecurityPolicy SecurityPolicy { get; }
 
     public static AeronFoundationHost Create(IAppPaths? customPaths = null, IClock? customClock = null)
     {
@@ -139,7 +146,10 @@ public sealed class AeronFoundationHost : IAsyncDisposable
             configStore,
             eventBus,
             lifecycle,
-            healthService);
+            healthService,
+            // No production identity or permission provider exists yet. This is an
+            // explicit unavailable state, not a mock or a permissive fallback.
+            new PolicyDecisionEngine(identityProvider: null, grants: null));
     }
 
     public async ValueTask DisposeAsync()
