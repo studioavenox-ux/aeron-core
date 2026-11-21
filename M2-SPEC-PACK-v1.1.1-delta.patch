@@ -1,0 +1,554 @@
+--- a/docs/specifications/M2/ADR-AUTH-001.md
++++ b/docs/specifications/M2/ADR-AUTH-001.md
+@@ -14,7 +14,7 @@
+ 
+ **`CONFIRMED` selection: C — Core-Led Governance.** Core leads internal governance and makes routine governance decisions within AERON.
+ 
+-Evidence: the Owner's v1.1 request Part 4, which cites `Pasted text(20261116-041642).txt` (H2); H2 was not directly available or inspected. The reported selection/meaning are confirmed by the Owner; original ADR text and exact file wording/version remain `UNRESOLVED`. The repository's existing confirmed governance rules below remain additional mandates, not replacements for this historical selection.
++Evidence: the Owner's v1.1 request Part 4, which cites `Pasted text(20261116-041642).txt` (H2); the Owner reports GPT-6 inspected the historical texts in the ChatGPT Library and compared authority records; H2 was not available to or independently inspected by Arena. The reported selection/meaning are confirmed by the Owner; original ADR text and exact file wording/version remain `UNRESOLVED`. The repository's existing confirmed governance rules below remain additional mandates, not replacements for this historical selection.
+ 
+ ## 2. Recovered / confirmed historical baseline
+ 
+--- a/docs/specifications/M2/ADR-AUTH-002.md
++++ b/docs/specifications/M2/ADR-AUTH-002.md
+@@ -14,7 +14,7 @@
+ 
+ **`CONFIRMED` selection: C — Restricted Dual Authorization.** Core may propose governance-policy amendments. Owner approval is mandatory before amendments take effect.
+ 
+-Evidence: the Owner's v1.1 request Part 4, which cites `Pasted text(20261116-041642).txt` (H2); H2 was not directly available or inspected. The reported selection/meaning are confirmed by the Owner; original ADR text and exact file wording/version remain `UNRESOLVED`. The repository's existing confirmed governance rules below remain additional mandates, not replacements for this historical selection.
++Evidence: the Owner's v1.1 request Part 4, which cites `Pasted text(20261116-041642).txt` (H2); the Owner reports GPT-6 inspected the historical texts in the ChatGPT Library and compared authority records; H2 was not available to or independently inspected by Arena. The reported selection/meaning are confirmed by the Owner; original ADR text and exact file wording/version remain `UNRESOLVED`. The repository's existing confirmed governance rules below remain additional mandates, not replacements for this historical selection.
+ 
+ ## 2. Recovered / confirmed historical baseline
+ 
+--- a/docs/specifications/M2/ADR-AUTH-003.md
++++ b/docs/specifications/M2/ADR-AUTH-003.md
+@@ -14,7 +14,7 @@
+ 
+ **`CONFIRMED` selection: B — Complete Owner Authority.** The Owner retains ultimate authority over strategic direction, Core identity, major priorities, consequential decisions, and governance amendments.
+ 
+-Evidence: the Owner's v1.1 request Part 4, which cites `Pasted text(20261116-041642).txt` (H2); H2 was not directly available or inspected. The reported selection/meaning are confirmed by the Owner; original ADR text and exact file wording/version remain `UNRESOLVED`. The repository's existing confirmed governance rules below remain additional mandates, not replacements for this historical selection.
++Evidence: the Owner's v1.1 request Part 4, which cites `Pasted text(20261116-041642).txt` (H2); the Owner reports GPT-6 inspected the historical texts in the ChatGPT Library and compared authority records; H2 was not available to or independently inspected by Arena. The reported selection/meaning are confirmed by the Owner; original ADR text and exact file wording/version remain `UNRESOLVED`. The repository's existing confirmed governance rules below remain additional mandates, not replacements for this historical selection.
+ 
+ ## 2. Recovered / confirmed historical baseline
+ 
+--- a/docs/specifications/M2/CONTRADICTION-REPORT.md
++++ b/docs/specifications/M2/CONTRADICTION-REPORT.md
+@@ -17,6 +17,10 @@
+ | `CON-10` | U-8R `Google Drive` backup vs OmniRoute preservation. | Owner request v1; C-05. | No contradiction. AERON backup storage is not OmniRoute configuration/data. No OmniRoute secret read or mutation. | None. |
+ | `CON-11` | Persistent contextual memory and multi-agent architecture vs M2 no premature modules. | Owner constraints; `BLUEPRINT.md`; `M1-FOUNDATION.md`. | Constraints preserved; M2 does not implement `Aeron.Memory`, `Aeron.Agents`, or `Aeron.Execution`. U-6/U-7 reconstructions define boundaries only. | None for M2 specification; future milestone decisions remain separate. |
+ 
++## U-7 archival and privacy reconciliation (`UNRESOLVED`)
++
++U-7-D records permanent archive of all conversations; U-7-B requires asking before sensitive or personal information is stored; U-7-E records deletion, correction, retention and privacy controls. These are distinct historical records, not a resolved hierarchy. The technical scope, consent, retention and deletion behavior, including backups and recovery, requires Owner review; no automatic exception or precedence is invented. See `U-07.md`.
++
+ ## Status
+ 
+ `PROPOSED` reconciliations; no historical decision changed. `UNRESOLVED` items are carried into `OWNER-DECISION-REQUIRED.md` without asking the Owner to repeat known decisions.
+@@ -26,5 +30,5 @@
+ - `SUPERSEDED`: v1.0 ten-item summary was not the fifteen-decision record; no mappings invented. See `HISTORICAL-CORRECTION-REPORT.md`.
+ - U-8R.2 Shared Authority and U-8R.15 Shared Governance remain distinct from ADR-AUTH-001 C Core-Led Governance, ADR-AUTH-002 C Restricted Dual Authorization and ADR-AUTH-003 B Complete Owner Authority. Owner-reported reconciliation is bounded delegation and ultimate Owner authority; precise operating mechanics are `PROPOSED`, not a rewriting of either selection.
+ - Complete AERON application-data backup and no raw secrets/credentials in exposed backup may require exclusions, re-enrollment or protected recovery. No silent definition of “complete” is made; resolve in review.
+-- H1–H4 not independently inspected; source-level contradiction review remains incomplete. Historical 5 TB / ~1% utilization is not current verified quota and does not override ₹0.
++- H1–H4 text was inspected by GPT-6 per Owner; Arena did not independently inspect original bytes, so byte-level provenance remains unresolved. Historical 5 TB / ~1% utilization is not current verified quota and does not override ₹0.
+ - Exact-operation binding must not collapse materially distinct values under redaction; local audit chains need an independently protected checkpoint or equivalent against full replacement/truncation; preemption must specify an irreversible external side-effect boundary. All three mechanisms are `PROPOSED` for review.
+--- a/docs/specifications/M2/DECISION-RECOVERY-MATRIX.md
++++ b/docs/specifications/M2/DECISION-RECOVERY-MATRIX.md
+@@ -1,42 +1,48 @@
+ # Decision Recovery Matrix
+ 
+ > Purpose: assign exactly one review state to every reconstructed decision.  
+-> States: `RECOVERED`, `CONFIRMED`, `PROPOSED`, `UNRESOLVED`, `SUPERSEDED`. Reported historical details are from the Owner request, not direct inspection of H1–H4.
++> States: `RECOVERED`, `CONFIRMED`, `PROPOSED`, `UNRESOLVED`, `SUPERSEDED`. GPT-6 reviewed H1–H4 text in ChatGPT Library per Owner clarification; Arena did not independently inspect or hash those files.
+ 
+ | ID | Decision / content | State | Source/version | Boundary |
+ |---|---|---|---|---|
+-| `U-8R.1` | Autonomy: `C` — Controlled Full Autonomy | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited but not inspected | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
+-| `U-8R.2` | Authority: `D` — Shared Authority | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited but not inspected | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
+-| `U-8R.3` | Authentication: `C` — Multi-Factor Authentication | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited but not inspected | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
+-| `U-8R.4` | Encryption: `D` — Comprehensive Encryption | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited but not inspected | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
+-| `U-8R.5` | Privacy: `E` — Custom Security Architecture | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited but not inspected | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
+-| `U-8R.6` | Emergency protection: `D` — Comprehensive Emergency Protection | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited but not inspected | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
+-| `U-8R.7` | Audit: `D` — Comprehensive Audit System | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited but not inspected | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
+-| `U-8R.8` | Access: `D` — Controlled Intelligent Access | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited but not inspected | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
+-| `U-8R.9` | Device security: `D` — Comprehensive Device Security | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited but not inspected | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
+-| `U-8R.10` | Recovery: `E` — Custom Recovery Architecture | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited but not inspected | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
+-| `U-8R.11` | Application backup: `C` — Complete Application Backup | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited but not inspected | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
+-| `U-8R.12` | Isolation: `C` — Component Isolation and User Alert | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited but not inspected | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
+-| `U-8R.13` | Permission revocation: `D` — Comprehensive Permission Revocation | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited but not inspected | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
+-| `U-8R.14` | Notifications: `D` — Comprehensive Security Notifications | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited but not inspected | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
+-| `U-8R.15` | Governance: `C` — Shared Governance | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited but not inspected | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
+-| `U8R-DETAILS` | U-8R.4, .6, .9, .11, .15 reported descriptions | `RECOVERED` | Owner v1.1 request Part 2; originals not inspected | Owner-reported historical descriptions; verify against source. |
++| `U-8R.1` | Autonomy: `C` — Controlled Full Autonomy | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited; GPT-6 review reported; not inspected by Arena | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
++| `U-8R.2` | Authority: `D` — Shared Authority | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited; GPT-6 review reported; not inspected by Arena | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
++| `U-8R.3` | Authentication: `C` — Multi-Factor Authentication | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited; GPT-6 review reported; not inspected by Arena | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
++| `U-8R.4` | Encryption: `D` — Comprehensive Encryption | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited; GPT-6 review reported; not inspected by Arena | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
++| `U-8R.5` | Privacy: `E` — Custom Security Architecture | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited; GPT-6 review reported; not inspected by Arena | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
++| `U-8R.6` | Emergency protection: `D` — Comprehensive Emergency Protection | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited; GPT-6 review reported; not inspected by Arena | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
++| `U-8R.7` | Audit: `D` — Comprehensive Audit System | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited; GPT-6 review reported; not inspected by Arena | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
++| `U-8R.8` | Access: `D` — Controlled Intelligent Access | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited; GPT-6 review reported; not inspected by Arena | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
++| `U-8R.9` | Device security: `D` — Comprehensive Device Security | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited; GPT-6 review reported; not inspected by Arena | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
++| `U-8R.10` | Recovery: `E` — Custom Recovery Architecture | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited; GPT-6 review reported; not inspected by Arena | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
++| `U-8R.11` | Application backup: `C` — Complete Application Backup | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited; GPT-6 review reported; not inspected by Arena | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
++| `U-8R.12` | Isolation: `C` — Component Isolation and User Alert | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited; GPT-6 review reported; not inspected by Arena | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
++| `U-8R.13` | Permission revocation: `D` — Comprehensive Permission Revocation | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited; GPT-6 review reported; not inspected by Arena | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
++| `U-8R.14` | Notifications: `D` — Comprehensive Security Notifications | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited; GPT-6 review reported; not inspected by Arena | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
++| `U-8R.15` | Governance: `C` — Shared Governance | `CONFIRMED` | Owner v1.1 request Part 2; H1/H2 cited; GPT-6 review reported; not inspected by Arena | Exact original question/alternatives unresolved except reported U-8R.6 alternatives. |
++| `U8R-DETAILS` | U-8R.4, .6, .9, .11, .15 reported descriptions | `RECOVERED` | Owner v1.1 request Part 2; originals not inspected by Arena | GPT-6 source-text comparison reported; Arena has not independently verified original bytes. |
+ | `U8R-CUSTOM` | U-8R.5 custom policy follow-up | `UNRESOLVED` | Owner v1.1 request Part 2 | Not invented. |
+ | `U8R-OLD` | v1.0 ten-item summary as complete decision set | `SUPERSEDED` | v1.0 pack; Owner v1.1 correction | No inferred mappings. |
+-| `ADR-HIST-001` | C — Core-Led Governance | `CONFIRMED` | Owner v1.1 request Part 4; H2 uninspected | Routine governance led by Core. |
+-| `ADR-HIST-002` | C — Restricted Dual Authorization | `CONFIRMED` | Owner v1.1 request Part 4; H2 uninspected | Core proposes amendments; Owner approval before effect. |
+-| `ADR-HIST-003` | B — Complete Owner Authority | `CONFIRMED` | Owner v1.1 request Part 4; H2 uninspected | Ultimate authority over strategy, identity, priorities, consequential decisions and amendments. |
++| `ADR-HIST-001` | C — Core-Led Governance | `CONFIRMED` | Owner v1.1 request Part 4; H2 inspected by GPT-6 per Owner; not by Arena | Routine governance led by Core. |
++| `ADR-HIST-002` | C — Restricted Dual Authorization | `CONFIRMED` | Owner v1.1 request Part 4; H2 inspected by GPT-6 per Owner; not by Arena | Core proposes amendments; Owner approval before effect. |
++| `ADR-HIST-003` | B — Complete Owner Authority | `CONFIRMED` | Owner v1.1 request Part 4; H2 inspected by GPT-6 per Owner; not by Arena | Ultimate authority over strategy, identity, priorities, consequential decisions and amendments. |
+ | `BACKUP-SAFEGUARDS` | Pre-upload encryption, separate key management, integrity verification, controlled restoration | `PROPOSED` | Owner v1.1 request Part 3 | Not separate historical decisions. |
+-| `H1-H4-DIRECT` | Direct review of four named historical source files | `UNRESOLVED` | Owner v1.1 request; workspace and Drive exact-name search | No direct source verification or file hashes. |
++| `H1-H4-REVIEW` | GPT-6 reviewed the four historical source texts in the ChatGPT Library | `RECOVERED` | Owner v1.1.1 clarification | Reported review, not Arena inspection. |
++| `H1-H4-INTEGRITY` | Original bytes, hashes and exact versions independently verified by Arena | `UNRESOLVED` | Arena workspace and prior exact-name Drive search | Original files not opened or hashed by Arena. |
+ | `REC-U1` | U-1 canonical body | `UNRESOLVED` | `U-01-TO-U-07.md`, blob `4598aa24…` | Principle confirmed; reconstruction `PROPOSED`. |
+ | `REC-U2` | U-2 canonical body / mode catalog | `UNRESOLVED` | same blob | Principle confirmed; reconstruction `PROPOSED`. |
+ | `REC-U3` | U-3 canonical body / scoring rules | `UNRESOLVED` | same blob | Principle confirmed; reconstruction `PROPOSED`. |
+ | `REC-U4` | U-4 canonical body / scheduling rules | `UNRESOLVED` | same blob | Principle confirmed; reconstruction `PROPOSED`. |
+ | `REC-U5` | U-5 canonical body / notification thresholds | `UNRESOLVED` | same blob | Principle confirmed; reconstruction `PROPOSED`. |
+ | `REC-U6` | U-6 canonical body / roster, personality, avatar spec | `UNRESOLVED` | same blob | Principle confirmed; reconstruction `PROPOSED`. |
+-| `REC-U7` | U-7 canonical body / retention and retrieval | `UNRESOLVED` | same blob | Principle confirmed; reconstruction `PROPOSED`. |
++| `U-7-A` | Complete Personal Knowledge System direction | `RECOVERED` | Owner v1.1.1 clarification of GPT-6 review, H1–H4 collectively | Letter, original question and alternatives not supplied; search/index design unresolved. |
++| `U-7-B` | Automatically remember useful information; ask before storing sensitive or personal information | `CONFIRMED` | Same clarification/review | Letter, original question and alternatives not supplied; consent/classification unresolved. |
++| `U-7-C` | `D — Hybrid Cognitive Memory` | `CONFIRMED` | Same clarification/review | Semantic, episodic, knowledge graph, long-term and contextual retrieval; original question/alternatives and implementation unresolved. |
++| `U-7-D` | Permanent archive of all conversations | `CONFIRMED` | Same clarification/review | Letter, original question and alternatives not supplied; technical retention/deletion/backup/encryption unresolved. |
++| `U-7-E` | `D — Complete Contextual Memory` identity | `CONFIRMED` | Same clarification/review | Question supplied; full alternatives unavailable; does not replace A–D or establish complete original U-7. |
++| `REC-U7` | Complete original U-7 body / technical retention and retrieval | `UNRESOLVED` | Repository placeholder; Owner clarification | Separate recovered records do not establish the full original U-7. |
+ | `REC-U8` | Original U-8 canonical text | `UNRESOLVED` | `U-08-ORIGINAL.md`, blob `5f72b9c9…` | Kept separate from U-8R; no clauses invented. |
+-| `REC-U8R` | Replacement U-8R canonical text | `UNRESOLVED` | `U-08R-REPLACEMENT.md`, blob `422a0c53…` | Fifteen selections and reported descriptions confirmed by Owner; full historical text uninspected. |
++| `REC-U8R` | Replacement U-8R canonical text | `UNRESOLVED` | `U-08R-REPLACEMENT.md`, blob `422a0c53…` | Fifteen selections confirmed by Owner; GPT-6 reviewed historical text per Owner; full original text and byte integrity remain unresolved to Arena. |
+ | `REC-ADR1` | ADR-AUTH-001 verbatim clauses | `UNRESOLVED` | `ADR-AUTH-001.md`, blob `aa7e8a51…` | Mandate `CONFIRMED`; reconstruction `PROPOSED`. |
+ | `REC-ADR2` | ADR-AUTH-002 verbatim clauses | `UNRESOLVED` | `ADR-AUTH-002.md`, blob `f568793d…` | Rules `CONFIRMED`; reconstruction `PROPOSED`. |
+ | `REC-ADR3` | ADR-AUTH-003 verbatim clauses | `UNRESOLVED` | `ADR-AUTH-003.md`, blob `0fc6102e…` | Rules `CONFIRMED`; reconstruction `PROPOSED`. |
+--- a/docs/specifications/M2/HISTORICAL-CORRECTION-REPORT.md
++++ b/docs/specifications/M2/HISTORICAL-CORRECTION-REPORT.md
+@@ -4,4 +4,4 @@
+ 
+ The Owner's v1.1 request explicitly provides fifteen numbered decisions and labels. These are retained separately and `CONFIRMED` in `U-08R.md`; no mapping is invented from the prior summary. In particular Shared Authority (U-8R.2), Shared Governance (U-8R.15), and the three authority ADRs remain distinct. Google Drive is a destination, not a numbered answer. The old assertion that no lettered labels were known is also `SUPERSEDED`; missing original questions and alternatives remain `UNRESOLVED` except U-8R.6's Owner-reported alternatives.
+ 
+-The four cited historical files were not available for direct inspection. Therefore historical wording is attributed to the Owner's v1.1 request and not presented as independently verified verbatim text. Original U-8 is not altered or merged. Existing v1.0 patch `M2-SPEC-PACK.patch` remains unchanged as a prior snapshot; it is historical and must not be applied over v1.1.
++The Owner reports GPT-6 retrieved and inspected the four historical texts in ChatGPT Library and compared the relevant records. Arena could not directly inspect or hash the files, so original bytes and exact versions are not independently verified. Owner-provided excerpts remain attributed to the clarification. Original U-8 is not altered or merged. Existing v1.0 patch `M2-SPEC-PACK.patch` remains unchanged as a prior snapshot; it is historical and must not be applied over v1.1.
+--- a/docs/specifications/M2/HISTORICAL-VS-RECONSTRUCTED-REGISTER.md
++++ b/docs/specifications/M2/HISTORICAL-VS-RECONSTRUCTED-REGISTER.md
+@@ -10,9 +10,9 @@
+ | `U-04.md` | Exact core principle; status `CONFIRMED` principle. | M2 no adaptive scheduling; scheduled `L2` approval binding. | Exact scheduling rules. |
+ | `U-05.md` | Exact core principle; status `CONFIRMED` principle. | M2 hard-visible approval/safety notices; `G3` boundary. | Exact notification thresholds. |
+ | `U-06.md` | Owner-reported team and Core identity selections, IRIS and MIRA names; exact core principle; status `CONFIRMED` principle. | M2 authorization inheritance, no agent frameworks, conflict precedence. | Exact roster, personalities, avatar/HQ spec. |
+-| `U-07.md` | Owner-reported memory content, encryption, controls, no authentication secrets; exact core principle; status `CONFIRMED` principle. | M2 separation of audit records from contextual memory; C-12 boundary. | Exact retention/retrieval/inspection/edit/delete rules. |
++| `U-07.md` | Five distinct U-7-A–E records: overall knowledge direction, sensitive/personal consent, D Hybrid Cognitive Memory, permanent conversation archive, D Complete Contextual Memory identity; GPT-6 review reported by Owner, Arena originals uninspected. Core principle and Owner-established selections retained. | M2 separation of audit records from contextual memory; C-12 boundary. | Original full U-7, A–D questions and full alternatives, technical retention/retrieval/inspection/edit/delete and privacy reconciliation. |
+ | `U-08.md` | Exact placeholder identifier, relationship, recovery status, audit record, integrity rule from blob `5f72b9c9…`. | Governance handling only; no U-8 clauses drafted. | Original U-8 canonical text, scope, rationale. |
+-| `U-08R.md` | Fifteen `CONFIRMED` Owner-supplied selections/labels and reported details; H1/H2 not directly inspected. Exact placeholder wording from blob `422a0c53…`; AVENOX/AOS context. | M2 engineering mechanisms and Google Drive boundary. | Original full questions and alternatives except Owner-reported U-8R.6; custom privacy; source verification; backup boundary. |
++| `U-08R.md` | Fifteen `CONFIRMED` Owner-supplied selections/labels and reported details; GPT-6 reviewed source texts per Owner; H1/H2 not directly inspected by Arena. Exact placeholder wording from blob `422a0c53…`; AVENOX/AOS context. | M2 engineering mechanisms and Google Drive boundary. | Original full questions and alternatives except Owner-reported U-8R.6; custom privacy; source verification; backup boundary. |
+ | `ADR-AUTH-001.md` | `C — Core-Led Governance` confirmed in Owner v1.1 request; exact confirmed mandate from blob `aa7e8a51…`; exact unrecovered note; exact AVENOX/AOS authority context. | OwnerAuthorityGuard normative reconstruction. | Verbatim historical clauses; additional emergency/inheritance semantics. |
+ | `ADR-AUTH-002.md` | `C — Restricted Dual Authorization` confirmed in Owner v1.1 request; exact confirmed governance rules from blob `f568793d…`; exact unrecovered note. | PolicyDecisionEngine normative reconstruction; M2/M3 boundary. | Verbatim historical clauses; exact classification/version/destination rules. |
+ | `ADR-AUTH-003.md` | `B — Complete Owner Authority` confirmed in Owner v1.1 request; exact confirmed governance rules from blob `0fc6102e…`; exact unrecovered note. | OwnerApprovalService, parameter hashing, AuditLedger normative reconstruction. | Verbatim historical clauses; exact expiry/cancel/recovery semantics. |
+@@ -28,4 +28,4 @@
+ 
+ ## v1.1 correction
+ 
+-The ten-item summary as a complete U-8R register is `SUPERSEDED`; no mapping to fifteen decisions is asserted. Owner-reported material is evidence from the v1.1 request, not independently verified verbatim H1–H4 text. Proposed technical safeguards are not historical selections. See `HISTORICAL-CORRECTION-REPORT.md`.
++The ten-item summary as a complete U-8R register is `SUPERSEDED`; no mapping to fifteen decisions is asserted. GPT-6 reviewed H1–H4 texts in ChatGPT Library as reported by the Owner; Arena has not independently inspected original files or verified their bytes. The U-7-E identity record does not replace the other separate U-7 decisions. Proposed technical safeguards are not historical selections. See `HISTORICAL-CORRECTION-REPORT.md`.
+--- a/docs/specifications/M2/M2-ACCEPTANCE-CRITERIA.md
++++ b/docs/specifications/M2/M2-ACCEPTANCE-CRITERIA.md
+@@ -45,11 +45,11 @@
+ 
+ ## 3. Status
+ 
+-Source-level acceptance is blocked pending direct verification of H1–H4 and Owner review; document consistency can be checked separately. Future M2 BUILD acceptance is `NOT AUTHORIZED` and remains blocked until Owner review and explicit authorization.
++Owner review and unresolved original byte-integrity/version verification remain open; GPT-6 text inspection is reported separately from Arena access; document consistency can be checked separately. Future M2 BUILD acceptance is `NOT AUTHORIZED` and remains blocked until Owner review and explicit authorization.
+ 
+ ## v1.1 extra acceptance gates
+ 
+ - Verify Owner-supplied 15 selections and three ADRs, U-8R.6 five alternatives, .4 four encryption elements, .9 six device details, .11 complete AERON application data, .15 bounded authority/no self-elevation, and unresolved .5 policy.
+-- Historical source files H1–H4 are not directly inspected; do not assert source verification or mark source-level acceptance passed.
++- Historical H1–H4 texts were inspected by GPT-6 per Owner; Arena did not inspect or hash the originals. Do not assert Arena byte-level verification or mark source-level acceptance passed.
+ - Future tests demonstrate exact binding despite redaction; checkpoint detection of whole-chain replacement/truncation; preemption around execution boundary and honest handling of irreversible external actions; MFA and device trust independently of DPAPI; complete backup scope reconciliation.
+ - Owner specification lock, existing authoritative U-8R gate, and separate explicit BUILD authorization are all required; no M2 build now.
+--- a/docs/specifications/M2/M2-IMPLEMENTATION-PLAN.md
++++ b/docs/specifications/M2/M2-IMPLEMENTATION-PLAN.md
+@@ -12,7 +12,7 @@
+ 
+ | Stage | Name | Proposed scope | Exit gate |
+ |---|---|---|---|
+-| M2.S0 | Specification review | Owner reviews all `PROPOSED RECONSTRUCTION` sections, `CONFIRMED` U-8R selections, `UNRESOLVED` definitions, contradiction report, threat model, architecture, acceptance criteria, and dependency graph. | Owner accepts/rejects spec pack v1.1 and supplies or defers missing historical texts/option definitions. |
++| M2.S0 | Specification review | Owner reviews all `PROPOSED RECONSTRUCTION` sections, `CONFIRMED` U-8R selections, `UNRESOLVED` definitions, contradiction report, threat model, architecture, acceptance criteria, and dependency graph. | Owner accepts/rejects spec pack v1.1.1 and supplies or defers missing historical texts/option definitions. |
+ | M2.S1 | Security contracts | Add typed M2 contracts only after authorization: action request, classification, policy decision, approval, parameter hash, audit entry, vault interface. | `Aeron.Contracts` remains zero-dependency; architecture tests pass; no secrets in contracts. |
+ | M2.S2 | Parameter hashing and redaction boundary | Protected exact-operation binding, separate from redacted display and audit; extend redaction test fixtures with synthetic secrets only. | Deterministic hash tests; mismatch tests; redaction tests; no raw secret in logs/audit/prompts. |
+ | M2.S3 | PolicyDecisionEngine + OwnerAuthorityGuard | Default-deny `G1`–`G4`/`L0`–`L3` evaluation, Owner preemption, precedence, ambiguous-request rejection, policy versioning, evaluation evidence. | Full policy matrix tests; preemption tests; conflict tests; fail-closed tests. |
+@@ -34,6 +34,6 @@
+ 
+ `PROPOSED / NOT AUTHORIZED`. Implementation remains blocked until Owner review and explicit `M2 BUILD` authorization.
+ 
+-## v1.1 design-review prerequisites (`PROPOSED`)
++## v1.1.1 design-review prerequisites (`PROPOSED`)
+ 
+-S0 must reconcile all 15 Owner-confirmed selections, three ADRs, reported U-6/U-7 and source integrity. H1–H4 have not been inspected; source gate unresolved. S2 must design exact-operation binding that distinguishes values collapsed by redaction, without disclosing secrets. S3/S4 must specify revocation atomicity and already-started irreversible external actions. S5 must design a separately protected checkpoint or equivalent against complete chain replacement and truncation. S6 must treat MFA and device trust as separate unresolved designs; DPAPI/Credential Manager alone do not provide MFA. Specify complete application-data backups versus excluded secrets, restoration and ₹0 before BUILD. These are proposals, not additional historical selections.
++S0 must reconcile all 15 Owner-confirmed selections, three ADRs, reported U-6/U-7 and source integrity. GPT-6 inspected H1–H4 text per Owner; Arena has not independently inspected or hashed the originals, and source-integrity and governance gates remain unresolved. S2 must design exact-operation binding that distinguishes values collapsed by redaction, without disclosing secrets. S3/S4 must specify revocation atomicity and already-started irreversible external actions. S5 must design a separately protected checkpoint or equivalent against complete chain replacement and truncation. S6 must treat MFA and device trust as separate unresolved designs; DPAPI/Credential Manager alone do not provide MFA. Specify complete application-data backups versus excluded secrets, restoration and ₹0 before BUILD. These are proposals, not additional historical selections.
+--- a/docs/specifications/M2/OWNER-DECISION-REQUIRED.md
++++ b/docs/specifications/M2/OWNER-DECISION-REQUIRED.md
+@@ -1,14 +1,18 @@
+-# Owner decision register — v1.1
++# Owner decision register — v1.1.1
+ 
+-> `PROPOSED` review items only; do not restate any confirmed selection. Source files H1–H4 were not accessible for direct inspection.
++> `PROPOSED` review items only; do not restate any confirmed selection. GPT-6 source-text review is reported by the Owner; H1–H4 were not accessible to Arena for independent inspection or hashing.
+ 
+ ## Historical and evidence questions (`UNRESOLVED`)
+ 
+-1. Supply or make accessible the four named historical files H1–H4 for direct inspection, exact wording, date/version and per-item source validation. The Owner's supplied fifteen selections and three ADR decisions are already confirmed and are not requested again.
++1. If available, make H1–H4 accessible for Arena’s independent byte-level integrity, hash, version and per-item provenance verification; GPT-6’s reported text review has already occurred. The Owner's supplied fifteen selections and three ADR decisions are already confirmed and are not requested again.
+ 2. Original U-8 canonical content, source, scope and relationship to U-8R remain unresolved; never merge the two.
+-3. Exact original U-1–U-7 and ADR-AUTH-001–003 full wording, source versions and any missing clauses remain unresolved. U-6/U-7 details already supplied by the Owner are preserved.
++3. Exact original U-1–U-7 and ADR-AUTH-001–003 full wording, source versions and missing clauses remain unresolved. The five U-7 records and known U-7-E question are preserved; do not ask the Owner to repeat selections.
+ 4. Full original U-8R.1–.15 question wording and alternative sets remain unresolved except the Owner-reported .6 alternatives. Obtain where available; do not invent or request re-selection.
+ 5. U-8R.5 custom privacy/security follow-up was explicitly not completed: determine its policy without changing selection E.
++
++## Memory design reconciliation (`UNRESOLVED`)
++
++Clarify how permanent conversation archival coexists with asking before storing sensitive/personal information and with review, correction, deletion, retention, backup and recovery controls. Determine sensitivity classification, consent workflow, storage and encryption mechanisms and retention policies without changing the five recorded decisions.
+ 
+ ## Design decisions requiring review (`PROPOSED` / `UNRESOLVED`)
+ 
+@@ -16,4 +20,4 @@
+ 7. Complete AERON application-data backup boundaries versus exclusion/protection of credentials and secrets; Drive account/folder permissions, per-operation G2/G4 approvals, retention, integrity, restoration, protected-key recovery and ₹0 quota. Historical 5 TB / ~1% is not current verification. Proposed pre-upload encryption, separate key management, integrity verification and controlled restoration are not separately confirmed historical decisions.
+ 8. Approve/revise the exact-operation binding separate from display redaction, independently protected audit checkpoint or equivalent, and revocation/irreversible-action execution boundary. Define failure and recovery behavior; no promise of reversing an already-started side effect.
+ 9. Review proposed component specs, threat model, dependency graph and acceptance criteria, including how Core-led routine governance and shared authority operate under Owner supremacy without self-elevation. Do not rewrite U-8R.2/.15 or ADR selections.
+-10. Review and explicitly approve the v1.1 specification lock only after evidence and decisions are reconciled. Existing U-8R authoritative-specification gate remains in force unless explicitly reconciled by the Owner. Separate explicit `M2 BUILD` authorization is needed later; this request does not authorize implementation.
++10. Review and explicitly approve the v1.1.1 specification lock only after evidence and decisions are reconciled. Existing U-8R authoritative-specification gate remains in force unless explicitly reconciled by the Owner. Separate explicit `M2 BUILD` authorization is needed later; this request does not authorize implementation.
+--- a/docs/specifications/M2/OWNER-REVIEW-U8R-RESTORATION.md
++++ b/docs/specifications/M2/OWNER-REVIEW-U8R-RESTORATION.md
+@@ -1,33 +1,33 @@
+ # Owner Review — U-8R Restoration v1.1
+ 
+-**Evidence boundary:** The Owner's v1.1 request directly supplies the selections, labels, reported descriptions and ADR decisions below. It identifies four historical files (H1–H4 in `SOURCE-AND-PROVENANCE-REGISTER.md`), but their contents were not available in the workspace or by exact-name Drive search and were **not independently inspected**. Entries are `CONFIRMED` as explicit Owner-provided decisions; reported historical wording and attribution await direct source verification. `RECOVERED` below means recovered in the Owner's reported excerpt, not verified verbatim from H1–H4. Do not imply a file-specific quotation or version/hash that was not inspected.
++**Evidence boundary (v1.1.1):** The Owner's v1.1 request provides the selections, labels and reported descriptions below. Per the Owner's v1.1.1 clarification, GPT-6 retrieved and inspected H1–H4 texts in the ChatGPT Library and compared relevant U-8R, authority and U-7 records. Arena could not access, independently open or hash those files. `CONFIRMED` selections remain unchanged; `RECOVERED` descriptions reflect the reported historical text review and Owner-provided excerpt, not Arena byte verification. The clarification does not establish item-by-item citations, exact file versions or original hashes. See `SOURCE-AND-PROVENANCE-REGISTER.md`.
+ 
+ ## Complete selection register
+ 
+-Every selection and label is `CONFIRMED` by the Owner's v1.1 request. H1 is identified by the Owner as containing all 15; H2 as containing the selection register. Neither was inspected, so H1/H2 citations below are leads, not independently verified item-level file evidence.
++Every selection and label is `CONFIRMED` by the Owner's v1.1 request. H1 is identified by the Owner as containing all 15; H2 as containing the selection register. GPT-6 reviewed the source texts per Owner; Arena did not inspect either file, so per-item attribution has not been independently verified by Arena.
+ 
+ | ID | Topic | Selection | Recorded label | Evidence |
+ |---|---|---|---|---|
+-| U-8R.1 | Autonomy | `C` | Controlled Full Autonomy | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.2 | Authority | `D` | Shared Authority | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.3 | Authentication | `C` | Multi-Factor Authentication | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.4 | Encryption | `D` | Comprehensive Encryption | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.5 | Privacy | `E` | Custom Security Architecture | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.6 | Emergency protection | `D` | Comprehensive Emergency Protection | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.7 | Audit | `D` | Comprehensive Audit System | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.8 | Access | `D` | Controlled Intelligent Access | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.9 | Device security | `D` | Comprehensive Device Security | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.10 | Recovery | `E` | Custom Recovery Architecture | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.11 | Application backup | `C` | Complete Application Backup | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.12 | Isolation | `C` | Component Isolation and User Alert | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.13 | Permission revocation | `D` | Comprehensive Permission Revocation | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.14 | Notifications | `D` | Comprehensive Security Notifications | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.15 | Governance | `C` | Shared Governance | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
++| U-8R.1 | Autonomy | `C` | Controlled Full Autonomy | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.2 | Authority | `D` | Shared Authority | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.3 | Authentication | `C` | Multi-Factor Authentication | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.4 | Encryption | `D` | Comprehensive Encryption | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.5 | Privacy | `E` | Custom Security Architecture | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.6 | Emergency protection | `D` | Comprehensive Emergency Protection | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.7 | Audit | `D` | Comprehensive Audit System | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.8 | Access | `D` | Controlled Intelligent Access | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.9 | Device security | `D` | Comprehensive Device Security | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.10 | Recovery | `E` | Custom Recovery Architecture | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.11 | Application backup | `C` | Complete Application Backup | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.12 | Isolation | `C` | Component Isolation and User Alert | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.13 | Permission revocation | `D` | Comprehensive Permission Revocation | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.14 | Notifications | `D` | Comprehensive Security Notifications | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.15 | Governance | `C` | Shared Governance | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
+ 
+ ## Detail, provenance and unresolved boundaries
+ 
+-See `U-08R.md` for all reported descriptions, the five reported U-8R.6 alternatives, the U-8R.4/.9/.11/.15 detail, proposed recovery safeguards and unresolved original wording. Google Drive is a recorded backup destination, not a sixteenth answer. U-8 remains separate. H3 and H4 are Owner-identified additional historical references only; their specific contents have not been inspected or assigned to individual rows.
++See `U-08R.md` for all reported descriptions, the five reported U-8R.6 alternatives, the U-8R.4/.9/.11/.15 detail, proposed recovery safeguards and unresolved original wording. Google Drive is a recorded backup destination, not a sixteenth answer. U-8 remains separate. H3 and H4 are additional historical references inspected by GPT-6 per Owner; Arena did not inspect them, and specific item-to-file assignments are not supplied.
+ 
+ ## Review gate
+ 
+-Provide H1–H4 for source-level verification, resolve the outstanding items in `OWNER-DECISION-REQUIRED.md`, and review the v1.1 specification lock. No M2 BUILD is authorized.
++Make H1–H4 available for independent byte-level verification if needed, resolve the outstanding items in `OWNER-DECISION-REQUIRED.md`, and review the v1.1.1 specification lock. No M2 BUILD is authorized.
+--- a/docs/specifications/M2/README.md
++++ b/docs/specifications/M2/README.md
+@@ -1,11 +1,11 @@
+-# AERON M2 — SECURITY KERNEL SPECIFICATION PACK v1.1
++# AERON M2 — SECURITY KERNEL SPECIFICATION PACK v1.1.1
+ 
+-> Status: `M2 SPECIFICATION v1.1 — PROPOSED`  
++> Status: `AERON M2 SPECIFICATION v1.1.1 — PROPOSED / OWNER REVIEW REQUIRED`<br>
+ > Owner: Aditya  
+ > Lead Builder: Arena Agent  
+ > Technical Architect: GPT-6  
+ > Scope: Specification development only. **Not implementation authorization.**  
+-> Version: `v1.1`  
++> Version: `v1.1.1`<br>
+ > Session date: see Owner v1.1 request; date not independently established  
+ > Implementation status: `BLOCKED` until Owner review and explicit `M2 BUILD` authorization.
+ 
+@@ -31,7 +31,11 @@
+ 
+ Fifteen individually numbered decisions and labels are preserved in `U-08R.md` and `OWNER-REVIEW-U8R-RESTORATION.md`. Their selections and reported labels are confirmed in the Owner's v1.1 request. The v1.0 ten-item summary is `SUPERSEDED` as the complete U-8R record; no mappings are inferred. Original U-8 remains separate.
+ 
+-ADR-AUTH-001 `C — Core-Led Governance`, ADR-AUTH-002 `C — Restricted Dual Authorization`, and ADR-AUTH-003 `B — Complete Owner Authority` are confirmed by the Owner's v1.1 request. The four historical files cited by the Owner were not directly available for inspection; precise file contents and verbatim provenance remain unresolved. Reported historical descriptions are distinguished from independently inspected source text in the provenance register. Original questions and alternatives remain unresolved except the reported U-8R.6 list; U-8R.5 custom policy remains unresolved.
++ADR-AUTH-001 `C — Core-Led Governance`, ADR-AUTH-002 `C — Restricted Dual Authorization`, and ADR-AUTH-003 `B — Complete Owner Authority` are confirmed by the Owner's v1.1 request. The Owner reports GPT-6 retrieved and inspected all four historical texts in the ChatGPT Library and compared relevant records. Arena could not independently open or hash the files; byte integrity and original versions remain unresolved. The provenance register distinguishes the two forms of access. Original questions and alternatives remain unresolved except the reported U-8R.6 list; U-8R.5 custom policy remains unresolved.
++
++#### Separate U-7 memory records
++
++`U-07.md` distinguishes the Complete Personal Knowledge System direction (no established letter), the sensitive/personal-information consent preference, `D — Hybrid Cognitive Memory`, permanent conversation archival, and the separate `D — Complete Contextual Memory` identity. The latter is not the complete original U-7 decision and does not replace the other records. Archival, deletion, privacy and retention implementation require review.
+ 
+ #### Existing architectural constraints (`CONFIRMED`)
+ 
+@@ -74,8 +78,8 @@
+ 
+ ### Global status
+ 
+-Every canonical U/ADR document is either `PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW` for newly drafted normative wording, `CONFIRMED` for known selections, `RECOVERED` for exact directly inspected contextual wording or explicitly identified Owner-reported historical excerpts, or `UNRESOLVED` where canonical text/option definitions are missing. No proposed document is marked confirmed.
++Every canonical U/ADR document is either `PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW` for newly drafted normative wording, `CONFIRMED` for known selections, `RECOVERED` for directly inspected contextual wording or historical excerpts from the Owner-reported GPT-6 source-text review, or `UNRESOLVED` where canonical text/option definitions are missing. No proposed document is marked confirmed.
+ 
+ Implementation remains blocked until the Owner approves the specification lock, the existing authoritative-source gate is satisfied or explicitly reconciled, and the Owner separately authorizes `M2 BUILD`.
+ 
+-**Final status:** `M2 SPECIFICATION v1.1 — PROPOSED`
++**Final status:** `AERON M2 SPECIFICATION v1.1.1 — PROPOSED / OWNER REVIEW REQUIRED`
+--- a/docs/specifications/M2/SECURITY-ARCHITECTURE.md
++++ b/docs/specifications/M2/SECURITY-ARCHITECTURE.md
+@@ -111,7 +111,7 @@
+ 
+ ## 7A. v1.1 Owner-reported requirements and proposed reconciliation
+ 
+-Source: Owner v1.1 request Parts 2, 4, 8 and 10; named H1–H4 were not directly inspected. Fifteen U-8R selections and the three separate ADR decisions are `CONFIRMED`; original questions/alternatives and custom U-8R.5 policy remain `UNRESOLVED`. All mechanisms below are `PROPOSED`, not historical Owner selections.
++Source: Owner v1.1 request Parts 2, 4, 8 and 10; GPT-6 inspected H1–H4 text per the v1.1.1 Owner clarification, but Arena did not independently inspect or hash the originals. Fifteen U-8R selections and the three separate ADR decisions are `CONFIRMED`; original questions/alternatives and custom U-8R.5 policy remain `UNRESOLVED`. All mechanisms below are `PROPOSED`, not historical Owner selections.
+ 
+ - **OwnerAuthorityGuard:** Owner supremacy, Core-led routine governance, bounded shared authority, no agent self-elevation, emergency preemption and immediate permission revocation. Revocation propagates across delegated agents; the execution-boundary design must prevent later starts and reconcile already-started actions without promising reversal.
+ - **PolicyDecisionEngine:** default deny; controlled full autonomy only within delegated permissions; controlled intelligent access; risk-based device identity and authorization; revocation; G1–G4 and L0–L3. No model, message, agent or skill may override policy.
+@@ -120,6 +120,10 @@
+ - **Windows Security Vault / authentication boundary:** MFA is confirmed but factors, enrollment and recovery are unresolved. Device trust, per-device permissions and remote revocation require a separate authentication/device layer; DPAPI and Credential Manager alone do **not** implement MFA. Encryption at rest, communications, key management and protected backups are confirmed scope; algorithms, key recovery, credentials, restore portability and enforcement are proposed/unresolved. Never infer the custom U-8R.5 policy.
+ - **Exact binding review:** materially distinct actions must not map to the same approval representation due to redaction. Use a protected, domain-separated, exact-operation binding separate from human-readable redaction; avoid persisting or exposing secrets and protect against low-entropy guessing. Concrete cryptographic scheme and lifecycle are `PROPOSED` and require review.
+ - **Recovery safeguards:** pre-upload encryption, separate key management, integrity verification and controlled restoration are `PROPOSED`; do not treat these additional safeguards as historical selections. Complete application-data scope versus excluded credentials/secrets requires explicit reconciliation.
++
++## U-7 memory boundary (v1.1.1)
++
++Five separate records are preserved in `U-07.md`: the Personal Knowledge System direction, privacy preference, D Hybrid Cognitive Memory backend, permanent conversation archive, and D Complete Contextual Memory identity. The identity does not replace the other decisions or establish the complete original U-7 body. Asking before storing sensitive or personal information, never storing passwords/authentication secrets in memory, and the recorded review/export/deletion controls must be reconciled with permanent archival intent; no technical hierarchy or storage implementation is invented. Memory-engine implementation remains outside M2. Any security mechanisms remain `PROPOSED`.
+ 
+ ## 8. Data flow
+ 
+--- a/docs/specifications/M2/SOURCE-AND-PROVENANCE-REGISTER.md
++++ b/docs/specifications/M2/SOURCE-AND-PROVENANCE-REGISTER.md
+@@ -3,18 +3,24 @@
+ > Purpose: preserve original source references, version information, and exact recovered wording.  
+ > No secrets, tokens, API keys, personal filenames, or private `Documents` listings are recorded.
+ 
+-## v1.1 Owner-provided historical information and source integrity
++## v1.1.1 historical source inspection and provenance correction
+ 
+-The current Owner request `AERON SEASON 2 — M2 SPECIFICATION PACK v1.1` is directly available and is the **actual evidence inspected** for all fifteen decisions, reported labels/details, ADR selections, U-6/U-7 and Core identity. It names the historical files below. The files were absent from the accessible workspace and an exact-name Google Drive search returned zero matches. Their contents, versions, cryptographic hashes and exact wording have not been inspected or independently verified. Dates below are Owner-supplied; where no date/version is supplied it is unknown. No row implies that a particular statement was personally checked in a named historical file.
++**A. GPT-6 / ChatGPT-side text inspection:** The Owner's v1.1.1 clarification reports that GPT-6 successfully retrieved and inspected the text of all four historical files in the ChatGPT Library during review, and compared relevant U-8R, authority and U-7 records against the v1.1 restoration. This is a reported review by GPT-6, not an inspection performed by Arena. The Owner's v1.1 and v1.1.1 requests provide the selections and excerpts recorded in this pack. The clarification does not provide file-specific passages for every individual decision; no such mapping is invented.
+ 
+-| ID | Owner-named source | Owner-described content | Date / version | Direct inspection |
+-|---|---|---|---|---|
+-| H1 | `Pasted text(20261116-031230).txt` — AERON — COMPLETE PROJECT HISTORY & MASTER DEVELOPMENT HANDOVER | Complete history; U-1–U-8; fifteen U-8R selections and descriptions; U-6/U-7 and authority. | Prepared 16 November 2026; version unspecified | Not available; not inspected. |
+-| H2 | `Pasted text(20261116-041642).txt` | U-8R selection register, confirmed requirements and three authority ADRs. | Filename dated 2026-11-16; version unspecified | Not available; not inspected. |
+-| H3 | `Pasted text(20261116-042926).txt` | Additional U-8R, authority, U-6 and U-7 reference. | Filename dated 2026-11-16; version unspecified | Not available; not inspected. |
+-| H4 | `Pasted text(20261116-043907).txt` | Additional U-8R, authority, U-6 and U-7 reference. | Filename dated 2026-11-16; version unspecified | Not available; not inspected. |
++**B. Arena workspace access:** H1–H4 were not mounted or present in Arena's working directory; the earlier exact-name Drive search also returned no matches. Arena did not independently open or hash the original files. The previous statement that the historical texts had not been inspected at all is corrected: GPT-6's reported text review and Arena's independent access are different evidence fields.
+ 
+-`RECOVERED` for v1.1 detail means **Owner-reported historical content in the request**; it does not assert direct recovery or verbatim quotation from H1–H4. Owner selections are `CONFIRMED` by that request. Source-level recovery and comparison remain `UNRESOLVED`; upload or supply accessible paths to H1–H4. Earlier searches below are historical observations, not statements that the newly identified files do not exist elsewhere.
++**C. Remaining verification:** Original file byte-level integrity and file hashes have not been verified or captured by Arena. Exact original file versions cannot be independently established from the workspace. Missing original question wording and alternatives remain `UNRESOLVED`; the review does not authorize inventing them. Source availability for independent verification does not negate the reported GPT-6 inspection.
++
++| ID | Historical source named in Owner clarification | Owner-described content | Date / version | GPT-6 text review (Owner-reported) | Arena access and integrity |
++|---|---|---|---|---|---|
++| H1 | `Pasted text(20261116-031230).txt` — AERON — COMPLETE PROJECT HISTORY & MASTER DEVELOPMENT HANDOVER | Project history; U-1–U-8; U-8R; U-6/U-7; authority. | Prepared 16 November 2026; version unknown. | Retrieved and inspected in ChatGPT Library. | Not mounted/opened/hashed by Arena. |
++| H2 | `Pasted text(20261116-041642).txt` | U-8R selection register and authority ADRs. | Filename dated 2026-11-16; version unknown. | Retrieved and inspected in ChatGPT Library. | Not mounted/opened/hashed by Arena. |
++| H3 | `Pasted text(20261116-042926).txt` | Additional U-8R, authority, U-6/U-7 reference. | Filename dated 2026-11-16; version unknown. | Retrieved and inspected in ChatGPT Library. | Not mounted/opened/hashed by Arena. |
++| H4 | `Pasted text(20261116-043907).txt` | Additional U-8R, authority, U-6/U-7 reference. | Filename dated 2026-11-16; version unknown. | Retrieved and inspected in ChatGPT Library. | Not mounted/opened/hashed by Arena. |
++
++**U-7 provenance:** `U-7-A`–`U-7-E` are separate pack-local traceability labels, not asserted original question numbers. Evidence for each is the Owner's v1.1.1 clarification of GPT-6's review of H1–H4 as a group. The clarification does not identify the particular file for each U-7 item. The U-7-E question is reproduced as supplied by the Owner; Arena cannot independently verify its original bytes. Other original U-7 question wording and all full alternative sets were not supplied in this clarification.
++
++`RECOVERED` distinguishes reported historical content from `PROPOSED` engineering; `CONFIRMED` marks Owner-established selections. Original byte integrity, file hashes, exact versions and unavailable wording remain `UNRESOLVED`. Earlier connected-source searches below are historical observations, not statements about ChatGPT Library contents.
+ 
+ ## 1. Owner request
+ 
+--- a/docs/specifications/M2/U-06.md
++++ b/docs/specifications/M2/U-06.md
+@@ -22,7 +22,7 @@
+ 
+ ## v1.1 Owner-reported historical selections (`CONFIRMED`)
+ 
+-The Owner's v1.1 request Part 9 reports: human-like team; gender-based voices; realistic human avatars; controlled full autonomy; intelligent team communication; adaptive human-like emotional expression; fully adaptive personalities; hybrid relationship intelligence; intelligent initiative; intelligent conflict resolution; individual fashion with shared AERON identity; full 3D animation; Living Virtual Headquarters; Advanced Space Station. H1/H3/H4 were cited but not directly inspected; original full wording and implementation details remain `UNRESOLVED`. No agent roles are inferred.
++The Owner's v1.1 request Part 9 reports: human-like team; gender-based voices; realistic human avatars; controlled full autonomy; intelligent team communication; adaptive human-like emotional expression; fully adaptive personalities; hybrid relationship intelligence; intelligent initiative; intelligent conflict resolution; individual fashion with shared AERON identity; full 3D animation; Living Virtual Headquarters; Advanced Space Station. H1/H3/H4 were cited; GPT-6 inspected historical source texts per the Owner’s clarification, but Arena did not independently inspect them; original full wording and implementation details remain `UNRESOLVED`. No agent roles are inferred.
+ 
+ Separate Core identity selections (`CONFIRMED`): Personality `D — Adaptive Hybrid`; Voice `A — Deep masculine voice`; Physical identity `C — Holographic Humanoid`; Leadership `D — Intelligent Team Leader`; Main interaction `D — Full Presence`; Main dashboard `E — Living AI Interface`. `IRIS` and `MIRA` are confirmed names only; no roles or other identities are inferred. These are future architecture context, not M2 implementation authorization.
+ 
+--- a/docs/specifications/M2/U-07.md
++++ b/docs/specifications/M2/U-07.md
+@@ -1,52 +1,73 @@
+-# U-7 — Complete Contextual Memory
++# U-7 — Separate Recovered Memory Decisions
+ 
+-> Owner-review state: `PROPOSED` with `CONFIRMED` principle / `UNRESOLVED` canonical body.  
+-> Classification: `PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW` for all newly drafted wording below.  
+-> This document is **not** an original historical specification.
++> v1.1.1 review state: recorded directions and selections `RECOVERED` / `CONFIRMED` as identified below; missing original wording and technical decisions `UNRESOLVED`; engineering interpretations `PROPOSED`. This is not the complete original historical U-7 specification. No memory engine or M2 BUILD is authorized.
+ 
+-## 1. Source and version
++## 1. Source and evidence boundary
+ 
+-- Source: `docs/governance/U-01-TO-U-07.md`, blob `4598aa24346a09a177311f2ec49a6d40af60e9d8`.
+-- Version: `studioavenox-ux/aeron-core` at base commit `24d0804b445b429909dd16068da7e00cccc603a0` and PR #3 head `857b3203fea13239c397113298e8b41b1dc67f93`; blob SHAs identical across all seven unique remote refs inspected.
+-- Prior audit: connected Notion, Google Docs, and Google Drive contained zero uploaded canonical text files for `U-1` through `U-7` during greenfield initialization on `2026-11-17`.
++- `docs/governance/U-01-TO-U-07.md`, blob `4598aa24346a09a177311f2ec49a6d40af60e9d8`, records the independently available repository principle quoted below.
++- The Owner's v1.1.1 clarification reports that GPT-6 retrieved and inspected historical texts H1–H4 in the ChatGPT Library and compared relevant U-7, U-8R and authority records with the v1.1 restoration. See `SOURCE-AND-PROVENANCE-REGISTER.md` for the four filenames and the separate inspection/access/integrity fields. Arena did not open or hash the original files. The clarification supplies the records below but does not assign each one to a particular file; no item-to-file mapping is invented.
++- `U-7-A` through `U-7-E` are **pack-local traceability labels**, not claimed original historical question numbers. The record does not establish a relationship between separate historical question numbering and broader U-7 numbering.
+ 
+-## 2. Recovered / confirmed historical baseline
+-
+-Exact repository wording recovered:
++## 2. Existing repository baseline
+ 
+ > **Core Principle (`CONFIRMED`):** AERON maintains persistent, structured contextual memory across sessions with provenance tracking, secret redaction (`C-12`), external disclosure classification (`G2`), and full Project Owner inspection, editing, and deletion rights.
+ 
+-> **Canonical Specification Body (exact retention and retrieval rules):** `UNRESOLVED` — awaiting confirmation prior to Milestone 5 implementation.
++The repository placeholder says the exact retention and retrieval body is `UNRESOLVED`; it is not the complete original text. Recovered records below do not establish that their combined wording is the complete original U-7 requirements decision.
+ 
+-Boundary: the quoted core principle is a confirmed principle, not exact historical canonical wording. The canonical specification body is `UNRESOLVED`.
++## 3. Five distinct recovered records
+ 
+-## v1.1 Owner-reported historical requirements (`CONFIRMED`)
++Common evidence for each entry: Owner's v1.1.1 clarification describing GPT-6's ChatGPT Library inspection of H1–H4; Arena did not directly inspect the originals. Known selections are `CONFIRMED` by the Owner's clarification; reported direction and wording are `RECOVERED` through that clarification. “Unavailable” means not supplied in the clarification, not a claim that the reviewed files contain no further wording.
+ 
+-The Owner's v1.1 request Part 9 reports Complete Contextual Memory including conversation history, personal preferences, project history, decisions and contextual retrieval; encrypted storage; review and correction; export and deletion controls; retention policies; and **never store passwords or authentication secrets in memory**. H1/H3/H4 were cited but not directly inspected. Exact historical wording, retention periods and implementation remain `UNRESOLVED`. No memory engine is authorized in M2.
++### U-7-A — Complete Personal Knowledge System
+ 
+-## 3. PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW
++- **Recorded overall direction (`RECOVERED`):** Complete Personal Knowledge System: searchable memory, searchable projects, searchable documents, conversation history and contextual recall.
++- **Answer letter:** `UNRESOLVED` — none established; do not invent one.
++- **Original question wording:** `UNRESOLVED` / not supplied. **Full original alternatives:** `UNRESOLVED` / not supplied.
++- **Technical decisions `UNRESOLVED`:** indexing, scope, access, retrieval and implementation. This direction is distinct from U-7-B–E.
+ 
+-The following is newly drafted M2-relevant interpretation for review. It is not historical text and must not be treated as a confirmed Owner decision.
++### U-7-B — Privacy preference
++
++- **Recorded selection (`CONFIRMED`):** Automatically remember useful information, but ask before storing sensitive or personal information. It is not unrestricted permission to store personal information.
++- **Answer letter:** `UNRESOLVED` — not supplied. **Original question wording:** `UNRESOLVED` / not supplied. **Full original alternatives:** `UNRESOLVED` / not supplied.
++- **Technical decisions `UNRESOLVED`:** sensitivity classification, consent prompts, edge cases, refusal and revocation behavior. Privacy selection remains separate from backend architecture and archive intent.
++
++### U-7-C — Backend memory architecture
++
++- **Recorded selection (`CONFIRMED`):** `D — Hybrid Cognitive Memory`.
++- **Recorded architecture concepts (`RECOVERED`):** semantic memory, episodic memory, knowledge graph, long-term memory and contextual retrieval.
++- **Answer letter:** `D`. **Original question wording:** `UNRESOLVED` / not supplied. **Full original alternatives:** `UNRESOLVED` / not supplied.
++- **Technical decisions `UNRESOLVED`:** data models, storage technology, retrieval and indexing algorithms, interfaces and operational behavior. These concepts do not authorize a memory-engine implementation in M2.
++
++### U-7-D — Conversation retention
++
++- **Recorded separate selection (`CONFIRMED`):** Permanent archive of all conversations.
++- **Answer letter:** `UNRESOLVED` — not supplied. **Original question wording:** `UNRESOLVED` / not supplied. **Full original alternatives:** `UNRESOLVED` / not supplied.
++- **Technical decisions `UNRESOLVED`:** retention implementation, deletion and correction semantics, backups, encryption, consent, archive scope and recovery. Permanent archival intent must be reconciled with U-7-B's sensitive/personal-information consent and U-7-E's review, deletion and retention controls; no precedence, exception or technical policy is silently imposed.
++
++### U-7-E — Memory identity
++
++- **Recorded question (`RECOVERED`, supplied in Owner clarification):** “AERON's memory identity: How should AERON Core remember its relationship/history with user?”
++- **Recorded selection (`CONFIRMED`):** `D — Complete Contextual Memory`.
++- **Recorded meaning (`RECOVERED`):** conversation history, personal preferences, project history, decisions, contextual retrieval and privacy controls.
++- **Recorded requirements (`RECOVERED`):** encrypted storage; review and correction; export and deletion controls; retention policies; **never store passwords or authentication secrets in memory**.
++- **Answer letter:** `D`. **Original question wording:** available as the wording reproduced above through the Owner clarification; Arena has not independently checked it against source bytes. **Full original alternatives:** `UNRESOLVED` / not supplied.
++- **Technical decisions `UNRESOLVED`:** encryption algorithms and keys, retention periods, consent and sensitivity handling, export/correction/deletion workflows and relationship to U-7-D's permanent archival intent.
++
++**Historical caveat:** U-7-E is a recovered memory-identity decision; it does not establish the complete original U-7 requirements decision and does not replace or absorb U-7-A, U-7-B, U-7-C or U-7-D.
++
++## 4. PROPOSED RECONSTRUCTION — REQUIRES OWNER REVIEW
+ 
+ - M2 must not implement the contextual-memory engine.
+ - Any M2 audit or approval record is separate from contextual memory and must still be redacted and provenance-tracked.
+-- No secret-bearing raw payload may enter memory, logs, prompts, approvals, or backups; C-12 remains fail-closed.
++- No secret-bearing raw payload may enter memory, logs, prompts, approvals or backups; C-12 remains a confirmed independent boundary. Engineering mechanisms remain proposed.
++- A future memory design must reconcile the five records and the archival/deletion/privacy tension without inventing a historical priority order.
+ 
+-## 4. Unresolved questions
++## 5. Unresolved questions and dependencies
+ 
+-- Exact retention/retrieval rules.
+-- Owner inspection/edit/delete workflow.
+-- Whether audit records are copied into contextual memory and, if so, under what classification.
++Original complete U-7 body, A–D question wording, full alternative sets, original file versions and byte integrity remain `UNRESOLVED`. Also unresolved: retention/retrieval rules, sensitive-data classification and consent, Owner inspection/edit/export/delete workflow, conflict resolution between permanent archival and deletion/privacy, backup behavior, and whether audit records enter memory.
+ 
+-## 5. Dependencies with other specifications
+-
+-- `ADR-AUTH-002.md` for `G2` data classification.
+-- `ADR-AUTH-003.md` for secret-redacting audit trails.
+-- `SECURITY-ARCHITECTURE.md` for redaction and AuditLedger.
++Dependencies: `ADR-AUTH-002.md` for G2 disclosure; `ADR-AUTH-003.md` for redacting audit; `SECURITY-ARCHITECTURE.md` for proposed security boundaries; `CONTRADICTION-REPORT.md` for archival/privacy tension; `OWNER-DECISION-REQUIRED.md` for missing inputs.
+ 
+ ## 6. Status
+ 
+-- Exact canonical text: `UNRESOLVED`.
+-- Confirmed principle: `CONFIRMED`.
+-- Newly drafted reconstruction: `PROPOSED`.
+-- Implementation: `NOT AUTHORIZED`.
++Recorded selections and directions retain their item-level status above; original full specification and unresolved technical questions are `UNRESOLVED`; new engineering is `PROPOSED`; implementation is `NOT AUTHORIZED`.
+--- a/docs/specifications/M2/U-08R.md
++++ b/docs/specifications/M2/U-08R.md
+@@ -1,10 +1,10 @@
+ # U-8R — Replacement security decisions
+ 
+-> v1.1 — Owner review; selections `CONFIRMED`; historical source verification and missing wording `UNRESOLVED`; engineering `PROPOSED`. Not the original document. Implementation not authorized. Original U-8 remains separate in `U-08.md`.
++> v1.1.1 — Owner review; selections `CONFIRMED`; original byte-level integrity, version and missing wording `UNRESOLVED`; engineering `PROPOSED`. Not the original document. Implementation not authorized. Original U-8 remains separate in `U-08.md`.
+ 
+ ## Source and scope
+ 
+-**Evidence boundary:** The Owner's v1.1 request directly supplies the selections, labels, reported descriptions and ADR decisions below. It identifies four historical files (H1–H4 in `SOURCE-AND-PROVENANCE-REGISTER.md`), but their contents were not available in the workspace or by exact-name Drive search and were **not independently inspected**. Entries are `CONFIRMED` as explicit Owner-provided decisions; reported historical wording and attribution await direct source verification. `RECOVERED` below means recovered in the Owner's reported excerpt, not verified verbatim from H1–H4. Do not imply a file-specific quotation or version/hash that was not inspected.
++**Evidence boundary (v1.1.1):** The Owner's v1.1 request provides the selections, labels and reported descriptions below. Per the Owner's v1.1.1 clarification, GPT-6 retrieved and inspected H1–H4 texts in the ChatGPT Library and compared relevant U-8R, authority and U-7 records. Arena could not access, independently open or hash those files. `CONFIRMED` selections remain unchanged; `RECOVERED` descriptions reflect the reported historical text review and Owner-provided excerpt, not Arena byte verification. The clarification does not establish item-by-item citations, exact file versions or original hashes. See `SOURCE-AND-PROVENANCE-REGISTER.md`.
+ 
+ The earlier v1.0 ten-item summary is `SUPERSEDED` as a U-8R record; its values are not mapped to these identifiers. See `HISTORICAL-CORRECTION-REPORT.md`. This file records 15 distinct decisions, not ten. The existing repository gate in `docs/governance/U-08R-REPLACEMENT.md` requires the authoritative specification to be supplied and confirmed before governed M2+ implementation. Owner specification lock and explicit BUILD authorization are additionally required.
+ 
+@@ -12,21 +12,21 @@
+ 
+ | ID | Topic | Selection | Recorded label | Evidence |
+ |---|---|---|---|---|
+-| U-8R.1 | Autonomy | `C` | Controlled Full Autonomy | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.2 | Authority | `D` | Shared Authority | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.3 | Authentication | `C` | Multi-Factor Authentication | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.4 | Encryption | `D` | Comprehensive Encryption | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.5 | Privacy | `E` | Custom Security Architecture | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.6 | Emergency protection | `D` | Comprehensive Emergency Protection | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.7 | Audit | `D` | Comprehensive Audit System | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.8 | Access | `D` | Controlled Intelligent Access | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.9 | Device security | `D` | Comprehensive Device Security | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.10 | Recovery | `E` | Custom Recovery Architecture | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.11 | Application backup | `C` | Complete Application Backup | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.12 | Isolation | `C` | Component Isolation and User Alert | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.13 | Permission revocation | `D` | Comprehensive Permission Revocation | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.14 | Notifications | `D` | Comprehensive Security Notifications | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
+-| U-8R.15 | Governance | `C` | Shared Governance | Owner v1.1 request, Part 2; cited H1/H2 (not inspected) |
++| U-8R.1 | Autonomy | `C` | Controlled Full Autonomy | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.2 | Authority | `D` | Shared Authority | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.3 | Authentication | `C` | Multi-Factor Authentication | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.4 | Encryption | `D` | Comprehensive Encryption | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.5 | Privacy | `E` | Custom Security Architecture | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.6 | Emergency protection | `D` | Comprehensive Emergency Protection | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.7 | Audit | `D` | Comprehensive Audit System | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.8 | Access | `D` | Controlled Intelligent Access | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.9 | Device security | `D` | Comprehensive Device Security | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.10 | Recovery | `E` | Custom Recovery Architecture | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.11 | Application backup | `C` | Complete Application Backup | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.12 | Isolation | `C` | Component Isolation and User Alert | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.13 | Permission revocation | `D` | Comprehensive Permission Revocation | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.14 | Notifications | `D` | Comprehensive Security Notifications | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
++| U-8R.15 | Governance | `C` | Shared Governance | Owner v1.1 request, Part 2; cited H1/H2 (GPT-6 review reported; not inspected by Arena) |
+ 
+ ## Reported historical descriptions and boundaries
+ 
+@@ -56,6 +56,6 @@
+ 
+ ## Unresolved historical questions and dependencies
+ 
+-The original complete questions and full alternative sets are unavailable except the reported U-8R.6 list. The original wording for every decision beyond supplied excerpts, H1–H4 contents, versions and authenticity, custom privacy policy, MFA factors, algorithms, exact device and backup/restore boundaries, and original U-8 remain unresolved. Do not infer unreported alternatives. See `OWNER-DECISION-REQUIRED.md` and `SOURCE-AND-PROVENANCE-REGISTER.md`.
++The original complete questions and full alternative sets are unavailable except the reported U-8R.6 list. The original wording beyond supplied excerpts, H1–H4 byte-level integrity and exact versions, custom privacy policy, MFA factors, algorithms, exact device and backup/restore boundaries, and original U-8 remain unresolved. Do not infer unreported alternatives. See `OWNER-DECISION-REQUIRED.md` and `SOURCE-AND-PROVENANCE-REGISTER.md`.
+ 
+ Separate dependencies: `U-08.md`; `U-06.md`, `U-07.md`; `ADR-AUTH-001.md`–`003.md`; `SECURITY-ARCHITECTURE.md`; `CONTRADICTION-REPORT.md`. Confirmed ADR selections and U-8R.2/.15 remain separate records. Pack and new mechanisms are `PROPOSED`; M2 BUILD remains blocked.
