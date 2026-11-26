@@ -13,7 +13,7 @@ namespace Aeron.Security;
 public sealed class OperationBinding : IDisposable
 {
     private static readonly UTF8Encoding StrictUtf8 = new(false, true);
-    private static readonly byte[] Domain = Encoding.ASCII.GetBytes("AERON-OPERATION-BINDING-V1");
+    private static readonly byte[] Domain = Encoding.ASCII.GetBytes("AERON-OPERATION-BINDING-V2");
     private readonly Lock _sync = new();
     private readonly byte[] _key = RandomNumberGenerator.GetBytes(32);
     private bool _disposed;
@@ -22,6 +22,7 @@ public sealed class OperationBinding : IDisposable
         Guid approvalId,
         SecurityAction action,
         string requestingSubject,
+        IdentityKind requestingKind,
         string target,
         string policyVersion,
         ReadOnlySpan<byte> exactParameters)
@@ -29,6 +30,11 @@ public sealed class OperationBinding : IDisposable
         if (approvalId == Guid.Empty || !Enum.IsDefined(action) || action == SecurityAction.Unknown)
         {
             throw new ArgumentException("An approval ID and known action are required.");
+        }
+
+        if (requestingKind is not (IdentityKind.Owner or IdentityKind.Agent))
+        {
+            throw new ArgumentException("A verified identity kind is required.", nameof(requestingKind));
         }
 
         ArgumentException.ThrowIfNullOrWhiteSpace(requestingSubject);
@@ -51,6 +57,9 @@ public sealed class OperationBinding : IDisposable
             BinaryPrimitives.WriteInt32BigEndian(encodedAction, (int)action);
             AppendBytes(hash, encodedAction);
             AppendText(hash, requestingSubject);
+            Span<byte> encodedKind = stackalloc byte[sizeof(int)];
+            BinaryPrimitives.WriteInt32BigEndian(encodedKind, (int)requestingKind);
+            AppendBytes(hash, encodedKind);
             AppendText(hash, target);
             AppendText(hash, policyVersion);
             AppendBytes(hash, exactParameters);
@@ -63,6 +72,7 @@ public sealed class OperationBinding : IDisposable
         Guid approvalId,
         SecurityAction action,
         string requestingSubject,
+        IdentityKind requestingKind,
         string target,
         string policyVersion,
         ReadOnlySpan<byte> exactParameters)
@@ -72,7 +82,7 @@ public sealed class OperationBinding : IDisposable
             return false;
         }
 
-        var actual = Compute(approvalId, action, requestingSubject, target, policyVersion, exactParameters);
+        var actual = Compute(approvalId, action, requestingSubject, requestingKind, target, policyVersion, exactParameters);
         try
         {
             return CryptographicOperations.FixedTimeEquals(expectedBinding, actual);

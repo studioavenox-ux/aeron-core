@@ -1,0 +1,896 @@
+diff --git a/M2-PHASE-AB-CORRECTION-REVIEW.md b/M2-PHASE-AB-CORRECTION-REVIEW.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..68ede90e19d9d453268331a96804490135de5793
+--- /dev/null
++++ b/M2-PHASE-AB-CORRECTION-REVIEW.md
+@@ -0,0 +1,40 @@
++# M2 Phase A correction and Phase B review
++
++**PHASE A — WINDOWS CI BUILD AND TESTS PASSED; SECURITY IMPLEMENTATION INCOMPLETE.** M2 is incomplete and not accepted. No physical APEX runtime verification is established.
++
++## Repository and evidence reconciliation
++
++GitHub PR [#4](https://github.com/studioavenox-ux/aeron-core/pull/4) is merged. Its head was `b6101fe7990eb8ed7041411676e4dd4b18884e15`; its merge commit is `38724834f75dd65ae59a7bf922d48e5b0ed78890`, the current branch's HEAD. The merge commit's parents are `24d0804b445b429909dd16068da7e00cccc603a0` and that PR head. GitHub records the account `studioavenox-ux` as mergedBy; this does not establish which person operated it. There were no recorded review submissions. The PR description explicitly described M2 as incomplete and not ready for acceptance.
++
++The earlier statement that there had been no commits, pushes or PR actions was inaccurate as a description of overall repository history: the PR head was committed and the PR was merged before the current branch began. It must not be read as an assertion about who performed those actions. No further GitHub write, commit, push, merge, approval, deployment or release was performed during this correction.
++
++[Windows CI run 44912919278](https://github.com/studioavenox-ux/aeron-core/actions/runs/44912919278), a pull_request run associated with PR head `b6101fe7990eb8ed7041411676e4dd4b18884e15`, has GitHub conclusion `success`, including restore, Release build (warnings as errors), automated tests, publish and executable verification steps. The Owner reports 76 tests passed and zero build warnings; the run log was inaccessible from this environment, so those exact numbers are Owner-reported rather than independently counted here. The workflow uses the default pull-request checkout; the actual checked-out CI SHA was not independently confirmed from logs. This evidence does not validate uncommitted corrections, Phase B code, or physical APEX.
++
++## Phase A correction and review
++
++- `src/Aeron.Security/OwnerApprovalService.cs`: entries retain the verified requesting subject and kind; `Request` includes both in HMAC and `Consume` reauthenticates and checks both, entire request and exact binding. Owner-only decide/revoke/cancel, expiry, revalidation, audit failure latch and in-process single use remain. In-memory state is volatile and capped; a trusted clock can move backwards before expiry is observed. Callbacks execute under a reentrant lock; audit callbacks are guarded, but identity/grant callbacks need additional reentrancy hardening. External grant changes and side effects are not atomic with this lock. Consumption is never sufficient production authorization.
++- `src/Aeron.Security/OperationBinding.cs`: V2 framed HMAC-SHA-256 binds identity kind as well as subject, action, ID, target, policy version and exact parameter bytes. Verification uses `CryptographicOperations.FixedTimeEquals`. The random instance key resides in managed process memory and is zeroed on disposal; other copies and OS/process compromise are outside its protection. Restart or disposal invalidates approvals. V1 and V2 bindings are deliberately incompatible and approvals are volatile.
++- `src/Aeron.Security/OwnerAuthorityGuard.cs`: missing/throwing providers, empty evidence, invalid subjects and unrecognized identity kinds fail closed. Its guarantees depend on a genuinely trusted provider; it is not MFA, device trust or OS identity verification.
++- `src/Aeron.Security/PolicyDecisionEngine.cs` and `src/Aeron.Contracts/SecurityPolicy.cs`: invalid/unknown actions or sensitivities and stale versions deny; explicit mappings and grants apply. Local path validation, remote gateway policy and secret access are unavailable and deny. G2/G3 and L0–L3 mappings are proposed engineering interpretations, not historical meanings. The action and sensitivity must be supplied by a trusted boundary.
++- `src/Aeron.Contracts/ApprovalContracts.cs`: audit records contain only event kind and approval ID, no identity evidence, secret or operation contents. An audit sink is an interface, not a durable ledger.
++- `src/Aeron.Core/FoundationHost.cs`: only the fail-closed policy with null provider and grants is exposed. No real identity, grant store, ledger, approval or production action dispatcher is wired.
++- `tests/Aeron.Security.Tests/OperationBindingTests.cs` and `tests/Aeron.Security.Tests/OwnerApprovalServiceTests.cs`: added direct HMAC kind tampering and both Agent-to-Owner and Owner-to-Agent same-subject transitions, changed version plus kind, payload tampering, positive consumption, replay and concurrent consumes; existing different-subject and consume/revoke cases remain. These new changes are **not compiled or executed** here.
++
++## Phase B — implemented foundations, not production integration
++
++- `src/Aeron.Contracts/WindowsIdentityContracts.cs` and `src/Aeron.Security/WindowsOwnerIdentityProvider.cs` separate an OS-observed account from an independent trusted Owner verifier. Both are mandatory; a Windows login alone cannot establish Owner identity. Neither actual Windows SID source nor protected verifier/MFA/device implementation exists. No enrollment, factor or recovery choice is invented; host composition remains unchanged.
++- `src/Aeron.Security/AuthorityState.cs` provides volatile explicit Owner-authenticated per-identity/action grants, no agent self-provisioning, session checks and Owner-authenticated session, agent and permission revocation. It denies without explicit grants; each check reauthenticates the session identity. Mutations are serialized in process, audited before granting, and revocations invalidate in memory even when audit fails; audit failure latches all authorization checks closed. A positive check is a snapshot, **not** dispatch authorization. It is not `IPermissionGrantStore`, not persistent, not wired into the host, and has no cross-process coordination, bounded capacity, protected provisioning UI, session expiry, principal lifecycle/reinstatement, policy-version scope or durable audit attribution. The fixed audit vocabulary and correlation IDs do not identify grant actor, target or action, so this is not yet an adequate production provisioning audit trail. Provider and sink trust, actual Owner MFA and protected access are prerequisites.
++- `src/Aeron.Contracts/AuditLedgerContracts.cs` and `src/Aeron.Security/AuditLedger.cs` start a file-backed ordered SHA-256 chain with fixed-size records and no free-form credential-bearing data, contiguous sequences, exclusive file handle, full verification on append, flush-to-disk, and a separate externally protected checkpoint contract. Missing, mismatched or failed checkpoints latch unavailability; a crash between file flush and checkpoint update fails closed and needs controlled recovery. The file must already exist; no silent initialization. Callers must supply random correlation IDs, not encode sensitive material into them. There is **no production protected/rollback-resistant checkpoint provider, provisioning, recovery, ACL/hardening or backup/retention policy**, and rollback of both file and unprotected checkpoint cannot be detected. An external protected monotonic anchor is mandatory. Full-chain verification is O(n); file and checkpoint writes are not one atomic transaction. `FileShare.None` depends on cooperative/platform file-sharing semantics and does not defend a privileged process modifying the file outside those semantics. This is not connected to the approval audit interface, and it must not be claimed as a complete production ledger.
++- New tests `tests/Aeron.Security.Tests/AuthorityStateTests.cs`, `AuditLedgerTests.cs`, and `WindowsOwnerIdentityProviderTests.cs` cover explicit grant/revocations/audit failure, chained append/tamper/truncation/checkpoint failure, and separation of account from Owner verification. They have not executed.
++
++## Boundary for future side effects
++
++A future trusted dispatcher must classify the actual operation and resolve the actual target and bytes, authenticate current identity/session, verify current protected policy and version, permissions, device trust and revocations, and validate the exact approval and durable audit. It must establish a concurrency protocol (e.g. one coordinated authority transaction/reservation with revocation ordered before irreversible dispatch), including crash recovery, before any external effect. Existing independent in-process locks and snapshot checks do not do this. Never authorize an action merely because an approval was consumed.
++
++## Remaining security kernel work
++
++SecureVault requires DPAPI and Windows Credential Manager boundary, key protection, ACLs, rotation and Owner-approved recovery; device identity/trust and MFA need approved enrollment, factors and recovery; EmergencyProtectionService needs isolation/shutdown boundaries and safe recovery; SecurityNotifications need privacy, delivery and failure semantics; backup/recovery needs encrypted scope, retention, key recovery and explicit authorization; WPF needs protected identity, UI and action-dispatch boundaries. Durable authorization provisioning, checkpoint protection/anti-rollback, audit accountability, revocation propagation, adversarial testing, Windows integration and physical APEX verification remain. No unresolved Owner choice is selected here.
++
++## Validation of new work
++
++The sandbox has no `dotnet`: `dotnet --info` exits 127. No new compilation, tests, or runtime result is claimed. Validate the separate correction patch in a fresh detached Windows checkout at merge commit `38724834f75dd65ae59a7bf922d48e5b0ed78890` (not an existing dirty checkout), verify its hash/size using the companion manifest, apply with `git apply --check --whitespace=error` then `git apply --whitespace=error`, and run `dotnet --info`, `dotnet restore Aeron.sln`, `dotnet test Aeron.sln -c Release --no-restore --verbosity normal`, and `dotnet build src/Aeron.Desktop/Aeron.Desktop.csproj -c Release -p:EnableWindowsTargeting=true --no-restore`, retaining logs and exit codes. If .NET 10 SDK is unavailable, report that blocker. The earlier Windows CI cannot substitute for this validation.
+diff --git a/docs/governance/U-08R-REPLACEMENT.md b/docs/governance/U-08R-REPLACEMENT.md
+index 422a0c53e72a7b0044e48e5beb0c494c0599a0de..6f27509b7b4a78f5f6faaedc120b6a3cae6a418e 100644
+--- a/docs/governance/U-08R-REPLACEMENT.md
++++ b/docs/governance/U-08R-REPLACEMENT.md
+@@ -7,3 +7,7 @@
+ - **Recovery Status:** `UNRESOLVED`
+ - **Audit Record (`VERIFIED` — 2026-11-17):** The canonical text of replacement Decision `U-8R` was not present in the repository or in connected Notion, Google Docs, or Google Drive sources at greenfield initialization.
+ - **Implementation Gate (`CONFIRMED`):** No clause of `U-8R` is fabricated. Before implementing any Milestone 2+ subsystem governed by `U-8R`, the authoritative `U-8R` specification must be supplied and confirmed by the Project Owner.
++
++## Subsequent Owner confirmation — implementation authorization
++
++The Owner confirmed the recovered U-8R record in the v1.1.1 specification pack as the implementation baseline and granted M2 BUILD authorization. The gate above is satisfied for this build by that confirmation; it is not a claim that the historical original source was recovered or independently verified. The 15 selections remain as recorded in `docs/specifications/M2/U-08R.md`; no selections are changed here. Historical original U-8 recovery remains unresolved, and original file byte hashes are unavailable. No original hashes, signatures, or independent source verification are asserted. Earlier blocked-status statements in the specification pack describe the position before this subsequent authorization.
+diff --git a/docs/milestones/M2-BUILD-PROGRESS.md b/docs/milestones/M2-BUILD-PROGRESS.md
+index 52807270c57b56bde65267dcfb2804ef23fd26e6..786933b1aeca13c7024170b16d52d65f96b1a12b 100644
+--- a/docs/milestones/M2-BUILD-PROGRESS.md
++++ b/docs/milestones/M2-BUILD-PROGRESS.md
+@@ -6,7 +6,11 @@ The Project Owner explicitly authorized M2 BUILD against specification pack v1.1
+ 
+ The Owner reports that GPT-6 retrieved and inspected the historical H1–H4 texts in ChatGPT Library. Arena did not independently open or hash those original bytes, and this document does not assert original file versions or signatures. See `docs/specifications/M2/SOURCE-AND-PROVENANCE-REGISTER.md` for the existing evidence boundary.
+ 
+-The exact existing gate in `docs/governance/U-08R-REPLACEMENT.md` says: “Before implementing any Milestone 2+ subsystem governed by `U-8R`, the authoritative `U-8R` specification must be supplied and confirmed by the Project Owner.” BUILD authorization and the Owner's designation of the v1.1.1 baseline are explicit; original byte provenance and some historical details remain unresolved. This progress record neither asserts Arena verified the originals nor silently waives or amends that gate. Independently defined conservative boundaries are being implemented; undefined policy remains fail-closed.
++The Owner confirmed v1.1.1 as the authoritative implementation baseline and granted M2 BUILD. The implementation gate in `docs/governance/U-08R-REPLACEMENT.md` is satisfied for this build by that confirmation; historical source recovery is a separate matter. Original U-8 remains unresolved and original file byte hashes unavailable; no signatures or independent verification are claimed. Earlier blocked-status statements in the pack predate this authorization. U-8R selections are preserved, not reselected.
++
++## Phase A status
++
++**PHASE A — WINDOWS CI BUILD AND TESTS PASSED; SECURITY IMPLEMENTATION INCOMPLETE.** This refers to PR #4's CI, associated with head `b6101fe7990eb8ed7041411676e4dd4b18884e15`, not the later uncommitted correction or Phase B code. The Owner reports 76 tests passed and a zero-warning Release build; GitHub confirms the CI job succeeded, but its logs could not be retrieved in this environment to independently verify those totals. No physical APEX runtime verification or M2 acceptance is implied. See `M2-PHASE-AB-CORRECTION-REVIEW.md` for reconciliation, unvalidated changes and remaining boundaries.
+ 
+ ## Current code boundary
+ 
+@@ -21,4 +25,4 @@ The exact existing gate in `docs/governance/U-08R-REPLACEMENT.md` says: “Befor
+ 
+ Production MFA/device enrollment and recovery, protected Owner UI, policy provisioning, comprehensive permission/session/device revocation, durable independently anchored audit, Windows vault, privacy/memory controls, emergency response, security notifications, backup/restore, and WPF action-boundary integration remain unfinished. Google Drive remains the recorded destination, not standing approval to upload. No side-effect dispatch is authorized by this prototype.
+ 
+-The available sandbox is Linux without `dotnet`; the Windows GitHub Actions workflow checks out committed revisions and cannot inspect these uncommitted changes without an unauthorized push. APEX is not exposed to this session. Syntax parsing is not compilation or execution. No M2 runtime, Windows, acceptance or performance result is claimed here.
++The available sandbox is Linux without `dotnet`; CI on the earlier PR cannot validate the later uncommitted correction or Phase B changes. APEX is not exposed to this session. Syntax parsing is not compilation or execution. Apart from the earlier CI result noted above, no new build, tests, M2 runtime, acceptance or performance result is claimed here.
+diff --git a/src/Aeron.Contracts/AuditLedgerContracts.cs b/src/Aeron.Contracts/AuditLedgerContracts.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..da7ab48356515ec5afc5b44f342fd85671d2ff4c
+--- /dev/null
++++ b/src/Aeron.Contracts/AuditLedgerContracts.cs
+@@ -0,0 +1,27 @@
++namespace Aeron.Contracts;
++
++// Fixed vocabulary only: no free text, credentials, identity evidence or operation payloads.
++public enum SecurityAuditKind
++{
++    PermissionGranted = 1,
++    PermissionRevoked = 2,
++    SessionRevoked = 3,
++    AgentRevoked = 4
++}
++
++/// <summary>
++/// Trusted external protected, rollback-resistant checkpoint. A missing/unreadable
++/// checkpoint must return false, never silently initialize. Atomic durable writes and
++/// protection against ledger-file attackers are implementation responsibilities.
++/// No production implementation is provided.
++/// </summary>
++public interface IProtectedAuditCheckpointStore
++{
++    bool TryRead(out long sequence, out byte[] hash);
++    bool TryWrite(long sequence, ReadOnlySpan<byte> hash);
++}
++
++public interface ISecurityAuditSink
++{
++    bool TryAppend(SecurityAuditKind kind, Guid correlationId);
++}
+diff --git a/src/Aeron.Contracts/WindowsIdentityContracts.cs b/src/Aeron.Contracts/WindowsIdentityContracts.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..f00db980767e6b4510c6abed73b4d8904588de03
+--- /dev/null
++++ b/src/Aeron.Contracts/WindowsIdentityContracts.cs
+@@ -0,0 +1,19 @@
++namespace Aeron.Contracts;
++
++/// <summary>OS account observation only; not proof of Owner identity or MFA.</summary>
++public sealed record WindowsAccountIdentity(string Sid);
++
++/// <summary>Trusted Windows integration must obtain the SID from the OS, not caller text.</summary>
++public interface IWindowsAccountIdentitySource
++{
++    bool TryGetCurrentAccount(out WindowsAccountIdentity? account);
++}
++
++/// <summary>
++/// Independent protected Owner verification, including the eventual Owner-approved MFA
++/// and device checks. Enrollment, recovery and factors are not defined by this contract.
++/// </summary>
++public interface IWindowsOwnerVerifier
++{
++    bool TryVerifyOwner(WindowsAccountIdentity account, ReadOnlyMemory<byte> evidence, out string? ownerSubjectId);
++}
+diff --git a/src/Aeron.Security/AuditLedger.cs b/src/Aeron.Security/AuditLedger.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..9d285ba3bf8a0cbf0a364f482a359274254111f4
+--- /dev/null
++++ b/src/Aeron.Security/AuditLedger.cs
+@@ -0,0 +1,96 @@
++using System.Buffers.Binary;
++using System.Security.Cryptography;
++using Aeron.Contracts;
++
++namespace Aeron.Security;
++
++/// <summary>
++/// Fixed-format, hash-chained ledger foundation. Requires a pre-existing file and a
++/// separately protected, rollback-resistant, durably provisioned checkpoint. Not wired
++/// into the application. Crash between file flush and checkpoint update fails closed.
++/// File access and checkpoint implementations must be protected against untrusted users.
++/// </summary>
++public sealed class AuditLedger : ISecurityAuditSink
++{
++    private const int RecordSize = 92; // sequence, kind, correlation id, previous hash, hash
++    private readonly string _path;
++    private readonly IProtectedAuditCheckpointStore _checkpoint;
++    private readonly Lock _sync = new();
++    private bool _unhealthy;
++
++    public AuditLedger(string existingFilePath, IProtectedAuditCheckpointStore checkpoint)
++    {
++        ArgumentException.ThrowIfNullOrWhiteSpace(existingFilePath);
++        ArgumentNullException.ThrowIfNull(checkpoint);
++        _path = existingFilePath;
++        _checkpoint = checkpoint;
++    }
++
++    public bool TryAppend(SecurityAuditKind kind, Guid correlationId)
++    {
++        lock (_sync)
++        {
++            if (_unhealthy || !Enum.IsDefined(kind) || correlationId == Guid.Empty) return false;
++            try
++            {
++                // Exclusive handle serializes cooperating processes and denies sharing on Windows.
++                using var file = new FileStream(_path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
++                if (!_checkpoint.TryRead(out var anchoredSequence, out var anchoredHash) ||
++                    anchoredSequence < 0 || anchoredHash is null || anchoredHash.Length != 32 ||
++                    !Verify(file, out var sequence, out var lastHash) ||
++                    sequence != anchoredSequence || !CryptographicOperations.FixedTimeEquals(lastHash, anchoredHash) ||
++                    sequence == long.MaxValue)
++                {
++                    _unhealthy = true;
++                    return false;
++                }
++
++                var record = new byte[RecordSize];
++                BinaryPrimitives.WriteInt64BigEndian(record.AsSpan(0, 8), sequence + 1);
++                BinaryPrimitives.WriteInt32BigEndian(record.AsSpan(8, 4), (int)kind);
++                if (!correlationId.TryWriteBytes(record.AsSpan(12, 16))) throw new InvalidOperationException();
++                lastHash.CopyTo(record, 28);
++                SHA256.HashData(record.AsSpan(0, 60), record.AsSpan(60, 32));
++                file.Position = file.Length;
++                file.Write(record);
++                file.Flush(flushToDisk: true);
++                if (!_checkpoint.TryWrite(sequence + 1, record.AsSpan(60, 32)))
++                {
++                    _unhealthy = true;
++                    return false;
++                }
++
++                return true;
++            }
++            catch (Exception)
++            {
++                _unhealthy = true;
++                return false;
++            }
++        }
++    }
++
++    private static bool Verify(FileStream file, out long sequence, out byte[] lastHash)
++    {
++        sequence = 0;
++        lastHash = new byte[32];
++        if (file.Length % RecordSize != 0) return false;
++        file.Position = 0;
++        var record = new byte[RecordSize];
++        Span<byte> actual = stackalloc byte[32];
++        while (file.Position < file.Length)
++        {
++            file.ReadExactly(record);
++            if (sequence == long.MaxValue || BinaryPrimitives.ReadInt64BigEndian(record.AsSpan(0, 8)) != sequence + 1 ||
++                !Enum.IsDefined((SecurityAuditKind)BinaryPrimitives.ReadInt32BigEndian(record.AsSpan(8, 4))) ||
++                new Guid(record.AsSpan(12, 16)) == Guid.Empty ||
++                !CryptographicOperations.FixedTimeEquals(record.AsSpan(28, 32), lastHash)) return false;
++            SHA256.HashData(record.AsSpan(0, 60), actual);
++            if (!CryptographicOperations.FixedTimeEquals(actual, record.AsSpan(60, 32))) return false;
++            record.AsSpan(60, 32).CopyTo(lastHash);
++            sequence++;
++        }
++
++        return true;
++    }
++}
+diff --git a/src/Aeron.Security/AuthorityState.cs b/src/Aeron.Security/AuthorityState.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..19131efd523213e690f72aa55e0e0b3735a4e138
+--- /dev/null
++++ b/src/Aeron.Security/AuthorityState.cs
+@@ -0,0 +1,150 @@
++using Aeron.Contracts;
++
++namespace Aeron.Security;
++
++/// <summary>
++/// Volatile authority foundation, not an action dispatcher or production grant store.
++/// All methods serialize with each other; external dispatch and external identity changes
++/// are not atomic with this lock. Restart loses grants and sessions (default deny).
++/// Trusted provider and audit callbacks must not call back into this instance.
++/// </summary>
++public sealed class AuthorityState
++{
++    private readonly Lock _sync = new();
++    private readonly OwnerAuthorityGuard _authority;
++    private readonly ISecurityAuditSink _audit;
++    private readonly HashSet<(VerifiedIdentity Identity, SecurityAction Action)> _grants = [];
++    private readonly Dictionary<Guid, VerifiedIdentity> _sessions = [];
++    private readonly HashSet<VerifiedIdentity> _revokedAgents = [];
++    private bool _busy;
++    private bool _unhealthy;
++
++    public AuthorityState(ITrustedIdentityProvider identityProvider, ISecurityAuditSink audit)
++    {
++        ArgumentNullException.ThrowIfNull(identityProvider);
++        ArgumentNullException.ThrowIfNull(audit);
++        _authority = new OwnerAuthorityGuard(identityProvider);
++        _audit = audit;
++    }
++
++    public bool Grant(ReadOnlyMemory<byte> ownerEvidence, VerifiedIdentity target, SecurityAction action)
++    {
++        lock (_sync)
++        {
++            if (_busy || _unhealthy || !Valid(target, action)) return false;
++            _busy = true;
++            try
++            {
++                if (!_authority.VerifyOwner(ownerEvidence) || _revokedAgents.Contains(target) ||
++                    !Record(SecurityAuditKind.PermissionGranted)) return false;
++                _grants.Add((target, action));
++                return true;
++            }
++            finally { _busy = false; }
++        }
++    }
++
++    public bool RevokePermission(ReadOnlyMemory<byte> ownerEvidence, VerifiedIdentity target, SecurityAction action)
++    {
++        lock (_sync)
++        {
++            if (_busy || !Valid(target, action)) return false;
++            _busy = true;
++            try
++            {
++                if (!_authority.VerifyOwner(ownerEvidence)) return false;
++                _grants.Remove((target, action));
++                return Record(SecurityAuditKind.PermissionRevoked);
++            }
++            finally { _busy = false; }
++        }
++    }
++
++    public bool RevokeAgent(ReadOnlyMemory<byte> ownerEvidence, VerifiedIdentity agent)
++    {
++        lock (_sync)
++        {
++            if (_busy || !ValidIdentity(agent) || agent.Kind != IdentityKind.Agent) return false;
++            _busy = true;
++            try
++            {
++                if (!_authority.VerifyOwner(ownerEvidence)) return false;
++                _revokedAgents.Add(agent);
++                _grants.RemoveWhere(g => g.Identity == agent);
++                return Record(SecurityAuditKind.AgentRevoked);
++            }
++            finally { _busy = false; }
++        }
++    }
++
++    public bool RevokeSession(ReadOnlyMemory<byte> ownerEvidence, Guid sessionId)
++    {
++        lock (_sync)
++        {
++            if (_busy || sessionId == Guid.Empty) return false;
++            _busy = true;
++            try
++            {
++                if (!_authority.VerifyOwner(ownerEvidence)) return false;
++                _sessions.Remove(sessionId);
++                return Record(SecurityAuditKind.SessionRevoked);
++            }
++            finally { _busy = false; }
++        }
++    }
++
++    public bool TryOpenSession(ReadOnlyMemory<byte> evidence, out Guid sessionId)
++    {
++        lock (_sync)
++        {
++            sessionId = Guid.Empty;
++            if (_busy || _unhealthy) return false;
++            _busy = true;
++            try
++            {
++                if (!_authority.TryAuthenticate(evidence, out var identity, out _) ||
++                    identity is null || _revokedAgents.Contains(identity)) return false;
++                sessionId = Guid.NewGuid();
++                _sessions.Add(sessionId, identity);
++                return true;
++            }
++            finally { _busy = false; }
++        }
++    }
++
++    // A positive result is only a snapshot, never authority for a side effect.
++    public bool IsCurrentlyGranted(Guid sessionId, ReadOnlyMemory<byte> evidence, SecurityAction action)
++    {
++        lock (_sync)
++        {
++            if (_busy || _unhealthy || !Enum.IsDefined(action) || action == SecurityAction.Unknown) return false;
++            _busy = true;
++            try
++            {
++                return _sessions.TryGetValue(sessionId, out var sessionIdentity) &&
++                    _authority.TryAuthenticate(evidence, out var identity, out _) && identity == sessionIdentity &&
++                    !_revokedAgents.Contains(sessionIdentity) && _grants.Contains((sessionIdentity, action));
++            }
++            finally { _busy = false; }
++        }
++    }
++
++    private bool Record(SecurityAuditKind kind)
++    {
++        if (_unhealthy) return false;
++        try
++        {
++            if (_audit.TryAppend(kind, Guid.NewGuid())) return true;
++        }
++        catch (Exception) { }
++        _unhealthy = true;
++        return false;
++    }
++
++    private static bool Valid(VerifiedIdentity identity, SecurityAction action) =>
++        ValidIdentity(identity) && Enum.IsDefined(action) && action != SecurityAction.Unknown;
++
++    private static bool ValidIdentity(VerifiedIdentity? identity) => identity is not null &&
++        !string.IsNullOrWhiteSpace(identity.SubjectId) && identity.SubjectId.Length <= 256 &&
++        identity.Kind is IdentityKind.Owner or IdentityKind.Agent;
++}
+diff --git a/src/Aeron.Security/OperationBinding.cs b/src/Aeron.Security/OperationBinding.cs
+index 5183a57e3a3fe00a05acdb9a29dbfaed42872aac..c52018789ff6e9d5a261804953e911576a70217b 100644
+--- a/src/Aeron.Security/OperationBinding.cs
++++ b/src/Aeron.Security/OperationBinding.cs
+@@ -13,7 +13,7 @@ namespace Aeron.Security;
+ public sealed class OperationBinding : IDisposable
+ {
+     private static readonly UTF8Encoding StrictUtf8 = new(false, true);
+-    private static readonly byte[] Domain = Encoding.ASCII.GetBytes("AERON-OPERATION-BINDING-V1");
++    private static readonly byte[] Domain = Encoding.ASCII.GetBytes("AERON-OPERATION-BINDING-V2");
+     private readonly Lock _sync = new();
+     private readonly byte[] _key = RandomNumberGenerator.GetBytes(32);
+     private bool _disposed;
+@@ -22,6 +22,7 @@ public sealed class OperationBinding : IDisposable
+         Guid approvalId,
+         SecurityAction action,
+         string requestingSubject,
++        IdentityKind requestingKind,
+         string target,
+         string policyVersion,
+         ReadOnlySpan<byte> exactParameters)
+@@ -31,6 +32,11 @@ public sealed class OperationBinding : IDisposable
+             throw new ArgumentException("An approval ID and known action are required.");
+         }
+ 
++        if (requestingKind is not (IdentityKind.Owner or IdentityKind.Agent))
++        {
++            throw new ArgumentException("A verified identity kind is required.", nameof(requestingKind));
++        }
++
+         ArgumentException.ThrowIfNullOrWhiteSpace(requestingSubject);
+         ArgumentException.ThrowIfNullOrWhiteSpace(target);
+         ArgumentException.ThrowIfNullOrWhiteSpace(policyVersion);
+@@ -51,6 +57,9 @@ public sealed class OperationBinding : IDisposable
+             BinaryPrimitives.WriteInt32BigEndian(encodedAction, (int)action);
+             AppendBytes(hash, encodedAction);
+             AppendText(hash, requestingSubject);
++            Span<byte> encodedKind = stackalloc byte[sizeof(int)];
++            BinaryPrimitives.WriteInt32BigEndian(encodedKind, (int)requestingKind);
++            AppendBytes(hash, encodedKind);
+             AppendText(hash, target);
+             AppendText(hash, policyVersion);
+             AppendBytes(hash, exactParameters);
+@@ -63,6 +72,7 @@ public sealed class OperationBinding : IDisposable
+         Guid approvalId,
+         SecurityAction action,
+         string requestingSubject,
++        IdentityKind requestingKind,
+         string target,
+         string policyVersion,
+         ReadOnlySpan<byte> exactParameters)
+@@ -72,7 +82,7 @@ public sealed class OperationBinding : IDisposable
+             return false;
+         }
+ 
+-        var actual = Compute(approvalId, action, requestingSubject, target, policyVersion, exactParameters);
++        var actual = Compute(approvalId, action, requestingSubject, requestingKind, target, policyVersion, exactParameters);
+         try
+         {
+             return CryptographicOperations.FixedTimeEquals(expectedBinding, actual);
+diff --git a/src/Aeron.Security/OwnerApprovalService.cs b/src/Aeron.Security/OwnerApprovalService.cs
+index b79b86d41d7a1a7c4251df20b131e3f752d1594e..f10803c35a2711fb519a7371fe3faa27d137f085 100644
+--- a/src/Aeron.Security/OwnerApprovalService.cs
++++ b/src/Aeron.Security/OwnerApprovalService.cs
+@@ -16,10 +16,10 @@ public sealed class OwnerApprovalService : IDisposable
+     private const int MaxVolatileApprovals = 1024;
+ 
+     private sealed class Entry(
+-        SecurityRequest request, string subject, byte[] binding, DateTimeOffset expiresAt)
++        SecurityRequest request, VerifiedIdentity identity, byte[] binding, DateTimeOffset expiresAt)
+     {
+         public SecurityRequest Request { get; } = request;
+-        public string Subject { get; } = subject;
++        public VerifiedIdentity Identity { get; } = identity;
+         public byte[] Binding { get; } = binding;
+         public DateTimeOffset ExpiresAt { get; } = expiresAt;
+         public ApprovalStatus Status { get; set; } = ApprovalStatus.Pending;
+@@ -74,14 +74,14 @@ public sealed class OwnerApprovalService : IDisposable
+                 }
+ 
+                 var id = Guid.NewGuid();
+-                var digest = _binding.Compute(id, request.Action, identity.SubjectId, target, request.PolicyVersion, exactParameters);
++                var digest = _binding.Compute(id, request.Action, identity.SubjectId, identity.Kind, target, request.PolicyVersion, exactParameters);
+                 if (!Record(id, ApprovalEventKind.Requested))
+                 {
+                     CryptographicOperations.ZeroMemory(digest);
+                     return AuditUnavailable();
+                 }
+ 
+-                _entries.Add(id, new Entry(request, identity.SubjectId, digest, expiresAt));
++                _entries.Add(id, new Entry(request, identity, digest, expiresAt));
+                 return new ApprovalResult(ApprovalResultCode.Success, id);
+             }
+             catch (Exception)
+@@ -160,8 +160,8 @@ public sealed class OwnerApprovalService : IDisposable
+ 
+                 var decision = _policy.EvaluateAndIdentify(request, actorEvidence, out var identity);
+                 if (decision.Disposition != PolicyDisposition.RequireOwnerApproval || identity is null ||
+-                    request != entry.Request || !string.Equals(identity.SubjectId, entry.Subject, StringComparison.Ordinal) ||
+-                    !_binding.Verify(entry.Binding, id, request.Action, identity.SubjectId, target, request.PolicyVersion, exactParameters))
++                    request != entry.Request || identity != entry.Identity ||
++                    !_binding.Verify(entry.Binding, id, request.Action, identity.SubjectId, identity.Kind, target, request.PolicyVersion, exactParameters))
+                 {
+                     return RejectAudited();
+                 }
+diff --git a/src/Aeron.Security/WindowsOwnerIdentityProvider.cs b/src/Aeron.Security/WindowsOwnerIdentityProvider.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..876c38222718636c0f4c4b51d292b7873ae3e937
+--- /dev/null
++++ b/src/Aeron.Security/WindowsOwnerIdentityProvider.cs
+@@ -0,0 +1,37 @@
++using Aeron.Contracts;
++
++namespace Aeron.Security;
++
++/// <summary>
++/// Composes two trusted dependencies; Windows account presence alone never authenticates
++/// an Owner. No OS account source, MFA verifier or production registration exists yet.
++/// </summary>
++public sealed class WindowsOwnerIdentityProvider : ITrustedIdentityProvider
++{
++    private readonly IWindowsAccountIdentitySource _accounts;
++    private readonly IWindowsOwnerVerifier _verifier;
++
++    public WindowsOwnerIdentityProvider(IWindowsAccountIdentitySource accounts, IWindowsOwnerVerifier verifier)
++    {
++        ArgumentNullException.ThrowIfNull(accounts);
++        ArgumentNullException.ThrowIfNull(verifier);
++        _accounts = accounts;
++        _verifier = verifier;
++    }
++
++    public bool TryAuthenticate(ReadOnlyMemory<byte> evidence, out VerifiedIdentity? identity)
++    {
++        identity = null;
++        if (evidence.IsEmpty) return false;
++        try
++        {
++            if (!_accounts.TryGetCurrentAccount(out var account) || account is null ||
++                string.IsNullOrWhiteSpace(account.Sid) || account.Sid.Length > 256 ||
++                !_verifier.TryVerifyOwner(account, evidence, out var subject) ||
++                string.IsNullOrWhiteSpace(subject) || subject.Length > 256) return false;
++            identity = new VerifiedIdentity(subject, IdentityKind.Owner);
++            return true;
++        }
++        catch (Exception) { return false; }
++    }
++}
+diff --git a/tests/Aeron.Security.Tests/AuditLedgerTests.cs b/tests/Aeron.Security.Tests/AuditLedgerTests.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..294ecc4bc5e969d72f040a263ceadf41245fb985
+--- /dev/null
++++ b/tests/Aeron.Security.Tests/AuditLedgerTests.cs
+@@ -0,0 +1,87 @@
++using Aeron.Contracts;
++using Xunit;
++
++namespace Aeron.Security.Tests;
++
++public sealed class AuditLedgerTests
++{
++    private sealed class Checkpoint : IProtectedAuditCheckpointStore
++    {
++        public long Sequence { get; set; }
++        public byte[] Hash { get; set; } = new byte[32];
++        public bool Available { get; set; } = true;
++        public bool WriteAvailable { get; set; } = true;
++        public bool TryRead(out long sequence, out byte[] hash)
++        {
++            sequence = Sequence;
++            hash = Hash.ToArray();
++            return Available;
++        }
++        public bool TryWrite(long sequence, ReadOnlySpan<byte> hash)
++        {
++            if (!Available || !WriteAvailable) return false;
++            Sequence = sequence;
++            Hash = hash.ToArray();
++            return true;
++        }
++    }
++
++    [Fact]
++    public void ChainsEventsAndRejectsTamperingAndTruncation()
++    {
++        var path = Path.GetTempFileName();
++        try
++        {
++            var checkpoint = new Checkpoint();
++            var ledger = new AuditLedger(path, checkpoint);
++            Assert.True(ledger.TryAppend(SecurityAuditKind.PermissionGranted, Guid.NewGuid()));
++            Assert.True(ledger.TryAppend(SecurityAuditKind.AgentRevoked, Guid.NewGuid()));
++            Assert.Equal(2, checkpoint.Sequence);
++            var original = File.ReadAllBytes(path);
++            original[12] ^= 1;
++            File.WriteAllBytes(path, original);
++            Assert.False(new AuditLedger(path, checkpoint).TryAppend(SecurityAuditKind.SessionRevoked, Guid.NewGuid()));
++            File.WriteAllBytes(path, []);
++            Assert.False(new AuditLedger(path, checkpoint).TryAppend(SecurityAuditKind.SessionRevoked, Guid.NewGuid()));
++        }
++        finally { File.Delete(path); }
++    }
++
++    [Fact]
++    public void CheckpointWriteFailureAndSequenceTamperingFailClosedAfterReopen()
++    {
++        var path = Path.GetTempFileName();
++        try
++        {
++            var checkpoint = new Checkpoint { WriteAvailable = false };
++            var ledger = new AuditLedger(path, checkpoint);
++            Assert.False(ledger.TryAppend(SecurityAuditKind.PermissionGranted, Guid.NewGuid()));
++            checkpoint.WriteAvailable = true;
++            Assert.False(new AuditLedger(path, checkpoint).TryAppend(SecurityAuditKind.PermissionGranted, Guid.NewGuid()));
++            var bytes = File.ReadAllBytes(path);
++            bytes[7] = 2;
++            File.WriteAllBytes(path, bytes);
++            Assert.False(new AuditLedger(path, checkpoint).TryAppend(SecurityAuditKind.PermissionGranted, Guid.NewGuid()));
++        }
++        finally { File.Delete(path); }
++    }
++
++    [Fact]
++    public void MissingOrFailingCheckpointAndInvalidEventsFailClosed()
++    {
++        var path = Path.GetTempFileName();
++        try
++        {
++            var checkpoint = new Checkpoint { Available = false };
++            var ledger = new AuditLedger(path, checkpoint);
++            Assert.False(ledger.TryAppend(SecurityAuditKind.PermissionGranted, Guid.NewGuid()));
++            checkpoint.Available = true;
++            Assert.False(ledger.TryAppend(SecurityAuditKind.PermissionGranted, Guid.NewGuid()));
++            var fresh = new AuditLedger(path, checkpoint);
++            Assert.False(fresh.TryAppend((SecurityAuditKind)999, Guid.NewGuid()));
++            Assert.False(fresh.TryAppend(SecurityAuditKind.PermissionGranted, Guid.Empty));
++            Assert.True(fresh.TryAppend(SecurityAuditKind.PermissionGranted, Guid.NewGuid()));
++        }
++        finally { File.Delete(path); }
++    }
++}
+diff --git a/tests/Aeron.Security.Tests/AuthorityStateTests.cs b/tests/Aeron.Security.Tests/AuthorityStateTests.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..536f8482829ddde9e5a26d6c67a3136f00a94661
+--- /dev/null
++++ b/tests/Aeron.Security.Tests/AuthorityStateTests.cs
+@@ -0,0 +1,72 @@
++using Aeron.Contracts;
++using Xunit;
++
++namespace Aeron.Security.Tests;
++
++public sealed class AuthorityStateTests
++{
++    private static readonly byte[] Owner = [1];
++    private static readonly byte[] Agent = [2];
++    private static readonly VerifiedIdentity AgentIdentity = new("agent", IdentityKind.Agent);
++
++    private sealed class IdentityProvider : ITrustedIdentityProvider
++    {
++        public bool TryAuthenticate(ReadOnlyMemory<byte> evidence, out VerifiedIdentity? identity)
++        {
++            identity = evidence.Span.SequenceEqual(Owner) ? new("owner", IdentityKind.Owner) :
++                evidence.Span.SequenceEqual(Agent) ? AgentIdentity : null;
++            return identity is not null;
++        }
++    }
++
++    private sealed class Sink : ISecurityAuditSink
++    {
++        public bool Available { get; set; } = true;
++        public List<SecurityAuditKind> Events { get; } = [];
++        public bool TryAppend(SecurityAuditKind kind, Guid correlationId)
++        {
++            if (!Available) return false;
++            Events.Add(kind);
++            return correlationId != Guid.Empty;
++        }
++    }
++
++    [Fact]
++    public void OwnerProvisioningIsExplicitAndRevocationsAreRevalidated()
++    {
++        var audit = new Sink();
++        var state = new AuthorityState(new IdentityProvider(), audit);
++        Assert.True(state.TryOpenSession(Agent, out var session));
++        Assert.False(state.IsCurrentlyGranted(session, Agent, SecurityAction.DiscloseData));
++        Assert.False(state.Grant(Agent, AgentIdentity, SecurityAction.DiscloseData));
++        Assert.True(state.Grant(Owner, AgentIdentity, SecurityAction.DiscloseData));
++        Assert.True(state.IsCurrentlyGranted(session, Agent, SecurityAction.DiscloseData));
++        Assert.False(state.IsCurrentlyGranted(session, Owner, SecurityAction.DiscloseData));
++        Assert.False(state.IsCurrentlyGranted(session, Agent, SecurityAction.ModifyLocalData));
++        Assert.True(state.RevokePermission(Owner, AgentIdentity, SecurityAction.DiscloseData));
++        Assert.False(state.IsCurrentlyGranted(session, Agent, SecurityAction.DiscloseData));
++        Assert.True(state.Grant(Owner, AgentIdentity, SecurityAction.DiscloseData));
++        Assert.True(state.RevokeSession(Owner, session));
++        Assert.False(state.IsCurrentlyGranted(session, Agent, SecurityAction.DiscloseData));
++        Assert.True(state.TryOpenSession(Agent, out session));
++        Assert.True(state.RevokeAgent(Owner, AgentIdentity));
++        Assert.False(state.IsCurrentlyGranted(session, Agent, SecurityAction.DiscloseData));
++        Assert.False(state.TryOpenSession(Agent, out _));
++        Assert.False(state.Grant(Owner, AgentIdentity, SecurityAction.DiscloseData));
++        Assert.Contains(SecurityAuditKind.AgentRevoked, audit.Events);
++    }
++
++    [Fact]
++    public void AuditFailureLatchesDenyAndRevocationRemainsEffective()
++    {
++        var audit = new Sink();
++        var state = new AuthorityState(new IdentityProvider(), audit);
++        Assert.True(state.Grant(Owner, AgentIdentity, SecurityAction.DiscloseData));
++        Assert.True(state.TryOpenSession(Agent, out var session));
++        audit.Available = false;
++        Assert.False(state.RevokePermission(Owner, AgentIdentity, SecurityAction.DiscloseData));
++        audit.Available = true;
++        Assert.False(state.IsCurrentlyGranted(session, Agent, SecurityAction.DiscloseData));
++        Assert.False(state.Grant(Owner, AgentIdentity, SecurityAction.DiscloseData));
++    }
++}
+diff --git a/tests/Aeron.Security.Tests/OperationBindingTests.cs b/tests/Aeron.Security.Tests/OperationBindingTests.cs
+index 7e85354f0ab3f03c6be7fd0818745e99afb94ff4..ca0b8a8d19768055eaf3d3094f78dbeb082eccb7 100644
+--- a/tests/Aeron.Security.Tests/OperationBindingTests.cs
++++ b/tests/Aeron.Security.Tests/OperationBindingTests.cs
+@@ -13,15 +13,16 @@ public sealed class OperationBindingTests
+         var id = Guid.NewGuid();
+         var original = Encoding.UTF8.GetBytes("token=synthetic-alpha");
+         var modified = Encoding.UTF8.GetBytes("token=synthetic-bravo");
+-        var digest = binding.Compute(id, SecurityAction.DiscloseData, "agent-a", "destination-a", "policy-1", original);
++        var digest = binding.Compute(id, SecurityAction.DiscloseData, "agent-a", IdentityKind.Agent, "destination-a", "policy-1", original);
+ 
+-        Assert.True(binding.Verify(digest, id, SecurityAction.DiscloseData, "agent-a", "destination-a", "policy-1", original));
+-        Assert.False(binding.Verify(digest, id, SecurityAction.DiscloseData, "agent-a", "destination-a", "policy-1", modified));
+-        Assert.False(binding.Verify(digest, Guid.NewGuid(), SecurityAction.DiscloseData, "agent-a", "destination-a", "policy-1", original));
+-        Assert.False(binding.Verify(digest, id, SecurityAction.ModifyExternalAccount, "agent-a", "destination-a", "policy-1", original));
+-        Assert.False(binding.Verify(digest, id, SecurityAction.DiscloseData, "agent-b", "destination-a", "policy-1", original));
+-        Assert.False(binding.Verify(digest, id, SecurityAction.DiscloseData, "agent-a", "destination-b", "policy-1", original));
+-        Assert.False(binding.Verify(digest, id, SecurityAction.DiscloseData, "agent-a", "destination-a", "policy-2", original));
++        Assert.True(binding.Verify(digest, id, SecurityAction.DiscloseData, "agent-a", IdentityKind.Agent, "destination-a", "policy-1", original));
++        Assert.False(binding.Verify(digest, id, SecurityAction.DiscloseData, "agent-a", IdentityKind.Agent, "destination-a", "policy-1", modified));
++        Assert.False(binding.Verify(digest, Guid.NewGuid(), SecurityAction.DiscloseData, "agent-a", IdentityKind.Agent, "destination-a", "policy-1", original));
++        Assert.False(binding.Verify(digest, id, SecurityAction.ModifyExternalAccount, "agent-a", IdentityKind.Agent, "destination-a", "policy-1", original));
++        Assert.False(binding.Verify(digest, id, SecurityAction.DiscloseData, "agent-b", IdentityKind.Agent, "destination-a", "policy-1", original));
++        Assert.False(binding.Verify(digest, id, SecurityAction.DiscloseData, "agent-a", IdentityKind.Owner, "destination-a", "policy-1", original));
++        Assert.False(binding.Verify(digest, id, SecurityAction.DiscloseData, "agent-a", IdentityKind.Agent, "destination-b", "policy-1", original));
++        Assert.False(binding.Verify(digest, id, SecurityAction.DiscloseData, "agent-a", IdentityKind.Agent, "destination-a", "policy-2", original));
+         Assert.DoesNotContain("synthetic-alpha", Convert.ToHexString(digest), StringComparison.Ordinal);
+     }
+ 
+@@ -30,8 +31,8 @@ public sealed class OperationBindingTests
+     {
+         using var binding = new OperationBinding();
+         var id = Guid.NewGuid();
+-        var digest = binding.Compute(id, SecurityAction.DiscloseData, "a", "bc", "v1", []);
+-        Assert.False(binding.Verify(digest, id, SecurityAction.DiscloseData, "ab", "c", "v1", []));
++        var digest = binding.Compute(id, SecurityAction.DiscloseData, "a", IdentityKind.Agent, "bc", "v1", []);
++        Assert.False(binding.Verify(digest, id, SecurityAction.DiscloseData, "ab", IdentityKind.Agent, "c", "v1", []));
+     }
+ 
+     [Fact]
+@@ -40,8 +41,8 @@ public sealed class OperationBindingTests
+         using var first = new OperationBinding();
+         using var second = new OperationBinding();
+         var id = Guid.NewGuid();
+-        var digest = first.Compute(id, SecurityAction.DiscloseData, "actor", "target", "v1", []);
+-        Assert.False(second.Verify(digest, id, SecurityAction.DiscloseData, "actor", "target", "v1", []));
++        var digest = first.Compute(id, SecurityAction.DiscloseData, "actor", IdentityKind.Agent, "target", "v1", []);
++        Assert.False(second.Verify(digest, id, SecurityAction.DiscloseData, "actor", IdentityKind.Agent, "target", "v1", []));
+     }
+ 
+     [Fact]
+@@ -49,7 +50,7 @@ public sealed class OperationBindingTests
+     {
+         using var binding = new OperationBinding();
+         Assert.Throws<EncoderFallbackException>(() =>
+-            binding.Compute(Guid.NewGuid(), SecurityAction.DiscloseData, "actor", "\ud800", "v1", []));
++            binding.Compute(Guid.NewGuid(), SecurityAction.DiscloseData, "actor", IdentityKind.Agent, "\ud800", "v1", []));
+     }
+ 
+     [Fact]
+@@ -58,6 +59,6 @@ public sealed class OperationBindingTests
+         var binding = new OperationBinding();
+         binding.Dispose();
+         Assert.Throws<ObjectDisposedException>(() =>
+-            binding.Compute(Guid.NewGuid(), SecurityAction.DiscloseData, "actor", "target", "v1", []));
++            binding.Compute(Guid.NewGuid(), SecurityAction.DiscloseData, "actor", IdentityKind.Agent, "target", "v1", []));
+     }
+ }
+diff --git a/tests/Aeron.Security.Tests/OwnerApprovalServiceTests.cs b/tests/Aeron.Security.Tests/OwnerApprovalServiceTests.cs
+index e6ba7f633a83e3ea48c80066050ad41dfae1eb00..f4efbe260ce7901296e3b94fba3e0ef553cbb0aa 100644
+--- a/tests/Aeron.Security.Tests/OwnerApprovalServiceTests.cs
++++ b/tests/Aeron.Security.Tests/OwnerApprovalServiceTests.cs
+@@ -24,6 +24,18 @@ public sealed class OwnerApprovalServiceTests
+         }
+     }
+ 
++    private sealed class ChangingIdentity : ITrustedIdentityProvider
++    {
++        public IdentityKind Kind { get; set; } = IdentityKind.Agent;
++        public bool TryAuthenticate(ReadOnlyMemory<byte> evidence, out VerifiedIdentity? identity)
++        {
++            identity = evidence.Span.SequenceEqual(Owner)
++                ? new VerifiedIdentity("owner", IdentityKind.Owner)
++                : new VerifiedIdentity("shared-subject", Kind);
++            return true;
++        }
++    }
++
+     private sealed class Grants : IPermissionGrantStore
+     {
+         public bool Enabled { get; set; } = true;
+@@ -127,6 +139,40 @@ public sealed class OwnerApprovalServiceTests
+         Assert.Equal(ApprovalResultCode.AuditUnavailable, service.Consume(id, Request, Agent, "destination", Payload).Code);
+     }
+ 
++    [Theory]
++    [InlineData(IdentityKind.Agent, IdentityKind.Owner)]
++    [InlineData(IdentityKind.Owner, IdentityKind.Agent)]
++    public void ChangedIdentityKindCannotConsumeAnApprovalForTheSameSubject(IdentityKind original, IdentityKind changed)
++    {
++        var clock = new Clock();
++        var identities = new ChangingIdentity { Kind = original };
++        using var service = new OwnerApprovalService(identities, new Grants(), clock, new Audit());
++        var id = service.Request(Request, Agent, "destination", Payload, clock.UtcNow.AddMinutes(1)).ApprovalId;
++        Assert.NotEqual(Guid.Empty, id);
++        Assert.Equal(ApprovalResultCode.Success, service.Decide(id, Owner, true).Code);
++        identities.Kind = changed;
++        Assert.Equal(ApprovalResultCode.Rejected, service.Consume(id, Request, Agent, "destination", Payload).Code);
++        var wrongVersion = Request with { PolicyVersion = "old-policy" };
++        Assert.Equal(ApprovalResultCode.Rejected, service.Consume(id, wrongVersion, Agent, "destination", Payload).Code);
++        identities.Kind = original;
++        Assert.Equal(ApprovalResultCode.Rejected, service.Consume(id, Request, Agent, "destination", [9]).Code);
++        Assert.Equal(ApprovalResultCode.Success, service.Consume(id, Request, Agent, "destination", Payload).Code);
++        Assert.Equal(ApprovalResultCode.Rejected, service.Consume(id, Request, Agent, "destination", Payload).Code);
++    }
++
++    [Fact]
++    public async Task ConcurrentConsumesHaveExactlyOneWinner()
++    {
++        var clock = new Clock();
++        using var service = new OwnerApprovalService(new Identities(), new Grants(), clock, new Audit());
++        var id = service.Request(Request, Agent, "destination", Payload, clock.UtcNow.AddMinutes(1)).ApprovalId;
++        Assert.Equal(ApprovalResultCode.Success, service.Decide(id, Owner, true).Code);
++        var results = await Task.WhenAll(Enumerable.Range(0, 16).Select(_ =>
++            Task.Run(() => service.Consume(id, Request, Agent, "destination", Payload))));
++        Assert.Equal(1, results.Count(r => r.Code == ApprovalResultCode.Success));
++        Assert.Equal(15, results.Count(r => r.Code == ApprovalResultCode.Rejected));
++    }
++
+     [Fact]
+     public async Task ConcurrentConsumeAndRevocationNeverBothSucceed()
+     {
+diff --git a/tests/Aeron.Security.Tests/WindowsOwnerIdentityProviderTests.cs b/tests/Aeron.Security.Tests/WindowsOwnerIdentityProviderTests.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..d3aea14c47aa8c635d5c7d6d30e8b72237b17712
+--- /dev/null
++++ b/tests/Aeron.Security.Tests/WindowsOwnerIdentityProviderTests.cs
+@@ -0,0 +1,42 @@
++using Aeron.Contracts;
++using Xunit;
++
++namespace Aeron.Security.Tests;
++
++public sealed class WindowsOwnerIdentityProviderTests
++{
++    private sealed class Account : IWindowsAccountIdentitySource
++    {
++        public bool Available { get; set; } = true;
++        public bool TryGetCurrentAccount(out WindowsAccountIdentity? account)
++        {
++            account = Available ? new WindowsAccountIdentity("S-1-5-21-example") : null;
++            return Available;
++        }
++    }
++
++    private sealed class Verifier : IWindowsOwnerVerifier
++    {
++        public bool Valid { get; set; }
++        public bool TryVerifyOwner(WindowsAccountIdentity account, ReadOnlyMemory<byte> evidence, out string? ownerSubjectId)
++        {
++            ownerSubjectId = Valid ? "owner" : null;
++            return Valid;
++        }
++    }
++
++    [Fact]
++    public void WindowsLoginAloneDoesNotAuthenticateOwner()
++    {
++        var account = new Account();
++        var verifier = new Verifier();
++        var provider = new WindowsOwnerIdentityProvider(account, verifier);
++        Assert.False(provider.TryAuthenticate(new byte[] { 1 }, out _));
++        verifier.Valid = true;
++        Assert.False(provider.TryAuthenticate(ReadOnlyMemory<byte>.Empty, out _));
++        Assert.True(provider.TryAuthenticate(new byte[] { 1 }, out var identity));
++        Assert.Equal(new VerifiedIdentity("owner", IdentityKind.Owner), identity);
++        account.Available = false;
++        Assert.False(provider.TryAuthenticate(new byte[] { 1 }, out _));
++    }
++}

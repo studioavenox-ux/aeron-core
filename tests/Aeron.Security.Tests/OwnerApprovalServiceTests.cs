@@ -24,6 +24,18 @@ public sealed class OwnerApprovalServiceTests
         }
     }
 
+    private sealed class ChangingIdentity : ITrustedIdentityProvider
+    {
+        public IdentityKind Kind { get; set; } = IdentityKind.Agent;
+        public bool TryAuthenticate(ReadOnlyMemory<byte> evidence, out VerifiedIdentity? identity)
+        {
+            identity = evidence.Span.SequenceEqual(Owner)
+                ? new VerifiedIdentity("owner", IdentityKind.Owner)
+                : new VerifiedIdentity("shared-subject", Kind);
+            return true;
+        }
+    }
+
     private sealed class Grants : IPermissionGrantStore
     {
         public bool Enabled { get; set; } = true;
@@ -125,6 +137,40 @@ public sealed class OwnerApprovalServiceTests
         Assert.Equal(ApprovalResultCode.AuditUnavailable, service.Revoke(id, Owner).Code);
         audit.Available = true;
         Assert.Equal(ApprovalResultCode.AuditUnavailable, service.Consume(id, Request, Agent, "destination", Payload).Code);
+    }
+
+    [Theory]
+    [InlineData(IdentityKind.Agent, IdentityKind.Owner)]
+    [InlineData(IdentityKind.Owner, IdentityKind.Agent)]
+    public void ChangedIdentityKindCannotConsumeAnApprovalForTheSameSubject(IdentityKind original, IdentityKind changed)
+    {
+        var clock = new Clock();
+        var identities = new ChangingIdentity { Kind = original };
+        using var service = new OwnerApprovalService(identities, new Grants(), clock, new Audit());
+        var id = service.Request(Request, Agent, "destination", Payload, clock.UtcNow.AddMinutes(1)).ApprovalId;
+        Assert.NotEqual(Guid.Empty, id);
+        Assert.Equal(ApprovalResultCode.Success, service.Decide(id, Owner, true).Code);
+        identities.Kind = changed;
+        Assert.Equal(ApprovalResultCode.Rejected, service.Consume(id, Request, Agent, "destination", Payload).Code);
+        var wrongVersion = Request with { PolicyVersion = "old-policy" };
+        Assert.Equal(ApprovalResultCode.Rejected, service.Consume(id, wrongVersion, Agent, "destination", Payload).Code);
+        identities.Kind = original;
+        Assert.Equal(ApprovalResultCode.Rejected, service.Consume(id, Request, Agent, "destination", [9]).Code);
+        Assert.Equal(ApprovalResultCode.Success, service.Consume(id, Request, Agent, "destination", Payload).Code);
+        Assert.Equal(ApprovalResultCode.Rejected, service.Consume(id, Request, Agent, "destination", Payload).Code);
+    }
+
+    [Fact]
+    public async Task ConcurrentConsumesHaveExactlyOneWinner()
+    {
+        var clock = new Clock();
+        using var service = new OwnerApprovalService(new Identities(), new Grants(), clock, new Audit());
+        var id = service.Request(Request, Agent, "destination", Payload, clock.UtcNow.AddMinutes(1)).ApprovalId;
+        Assert.Equal(ApprovalResultCode.Success, service.Decide(id, Owner, true).Code);
+        var results = await Task.WhenAll(Enumerable.Range(0, 16).Select(_ =>
+            Task.Run(() => service.Consume(id, Request, Agent, "destination", Payload))));
+        Assert.Equal(1, results.Count(r => r.Code == ApprovalResultCode.Success));
+        Assert.Equal(15, results.Count(r => r.Code == ApprovalResultCode.Rejected));
     }
 
     [Fact]

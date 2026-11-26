@@ -1,0 +1,1418 @@
+diff --git a/src/Aeron.Contracts/ApprovalContracts.cs b/src/Aeron.Contracts/ApprovalContracts.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..81f790deaabb43a7d32e7e28f02c999f9e040051
+--- /dev/null
++++ b/src/Aeron.Contracts/ApprovalContracts.cs
+@@ -0,0 +1,44 @@
++namespace Aeron.Contracts;
++
++public enum ApprovalStatus
++{
++    Pending = 0,
++    Approved = 1,
++    Denied = 2,
++    Cancelled = 3,
++    Consumed = 4,
++    Revoked = 5
++}
++
++public enum ApprovalEventKind
++{
++    Requested = 1,
++    Approved = 2,
++    Denied = 3,
++    Cancelled = 4,
++    Consumed = 5,
++    Revoked = 6,
++    Rejected = 7,
++    Expired = 8
++}
++
++/// <summary>No request parameters, target, evidence, or credentials are included.</summary>
++public sealed record ApprovalAuditEvent(Guid ApprovalId, ApprovalEventKind Kind);
++
++/// <summary>
++/// A trusted audit sink must durably append or return false. The application has no
++/// production implementation yet; without one the approval service is unavailable.
++/// </summary>
++public interface IApprovalAuditSink
++{
++    bool TryAppend(ApprovalAuditEvent auditEvent);
++}
++
++public enum ApprovalResultCode
++{
++    Success = 0,
++    Rejected = 1,
++    AuditUnavailable = 2
++}
++
++public sealed record ApprovalResult(ApprovalResultCode Code, Guid ApprovalId);
+diff --git a/src/Aeron.Contracts/SecurityPolicy.cs b/src/Aeron.Contracts/SecurityPolicy.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..67766ce2ca50b718f1ab366228bc5755a99f9214
+--- /dev/null
++++ b/src/Aeron.Contracts/SecurityPolicy.cs
+@@ -0,0 +1,111 @@
++namespace Aeron.Contracts;
++
++// Engineering mappings for the independently defined C-10/C-11 and G/L constraints.
++// They are not a reconstruction of missing historical option wording.
++public enum SecurityAction
++{
++    Unknown = 0,
++    ReadApplicationState = 1,
++    ReadLocalData = 2,
++    ModifyLocalData = 3,
++    RemoteInference = 4,
++    DiscloseData = 5,
++    SendCommunication = 6,
++    ModifyExternalAccount = 7,
++    ChangeAuthority = 8,
++    ExecuteSkillScript = 9
++}
++
++public enum DataSensitivity
++{
++    Unknown = 0,
++    Routine = 1,
++    LocalPrivate = 2,
++    Secret = 3
++}
++
++public enum IdentityKind
++{
++    Unknown = 0,
++    Owner = 1,
++    Agent = 2
++}
++
++public enum LocalAuthorityTier
++{
++    None = 0,
++    L0 = 1,
++    L1 = 2,
++    L2 = 3,
++    L3 = 4
++}
++
++[Flags]
++public enum GovernanceDomain
++{
++    None = 0,
++    G1 = 1,
++    G2 = 2,
++    G3 = 4,
++    G4 = 8
++}
++
++public enum PolicyDisposition
++{
++    Deny = 0,
++    Allow = 1,
++    RequireOwnerApproval = 2
++}
++
++public enum PolicyReason
++{
++    Allowed = 0,
++    ApprovalRequired = 1,
++    InvalidRequest = 2,
++    PolicyVersionMismatch = 3,
++    IdentityProviderUnavailable = 4,
++    IdentityRejected = 5,
++    PermissionStoreUnavailable = 6,
++    PermissionDenied = 7,
++    ForbiddenAction = 8,
++    SecretDisclosureForbidden = 9,
++    GatewayPolicyUnavailable = 10,
++    OwnerRequired = 11,
++    ScopeValidationUnavailable = 12
++}
++
++/// <summary>Supplied by a trusted identity provider, not by an agent request.</summary>
++public sealed record VerifiedIdentity(string SubjectId, IdentityKind Kind);
++
++/// <summary>
++/// Implementations must verify evidence and identity out of band, including required MFA
++/// and device trust. No production identity provider is currently configured.
++/// </summary>
++public interface ITrustedIdentityProvider
++{
++    bool TryAuthenticate(ReadOnlyMemory<byte> evidence, out VerifiedIdentity? identity);
++}
++
++/// <summary>Provisioned by trusted composition; an agent cannot grant itself access.</summary>
++public interface IPermissionGrantStore
++{
++    bool IsGranted(VerifiedIdentity identity, SecurityAction action);
++}
++
++/// <summary>
++/// Action and sensitivity must be determined by the trusted action boundary, not by
++/// untrusted model or agent input. Policy evaluation alone does not execute an action.
++/// </summary>
++public sealed record SecurityRequest(SecurityAction Action, DataSensitivity Sensitivity, string PolicyVersion);
++
++public sealed record SecurityDecision(
++    PolicyDisposition Disposition,
++    PolicyReason Reason,
++    string PolicyVersion,
++    LocalAuthorityTier LocalTier,
++    GovernanceDomain Domains);
++
++public interface ISecurityPolicy
++{
++    SecurityDecision Evaluate(SecurityRequest? request, ReadOnlyMemory<byte> identityEvidence);
++}
+diff --git a/src/Aeron.Core/FoundationHost.cs b/src/Aeron.Core/FoundationHost.cs
+index 9736d89d61ec88914f77961b29910158880f63e2..0279cbb8aca9f3ef0ff4f232ecaa183d72a4da6c 100644
+--- a/src/Aeron.Core/FoundationHost.cs
++++ b/src/Aeron.Core/FoundationHost.cs
+@@ -83,7 +83,8 @@ public sealed class AeronFoundationHost : IAsyncDisposable
+         ISecureConfigStore configStore,
+         ICoreEventBus eventBus,
+         IAppLifecycle lifecycle,
+-        IFoundationHealthService healthService)
++        IFoundationHealthService healthService,
++        ISecurityPolicy securityPolicy)
+     {
+         Paths = paths;
+         RedactionFilter = redactionFilter;
+@@ -92,6 +93,7 @@ public sealed class AeronFoundationHost : IAsyncDisposable
+         EventBus = eventBus;
+         Lifecycle = lifecycle;
+         HealthService = healthService;
++        SecurityPolicy = securityPolicy;
+     }
+ 
+     public IAppPaths Paths { get; }
+@@ -101,6 +103,11 @@ public sealed class AeronFoundationHost : IAsyncDisposable
+     public ICoreEventBus EventBus { get; }
+     public IAppLifecycle Lifecycle { get; }
+     public IFoundationHealthService HealthService { get; }
++    /// <summary>
++    /// Denies access until a real trusted identity provider and grant store are wired.
++    /// This is not yet an action executor or an approval service.
++    /// </summary>
++    public ISecurityPolicy SecurityPolicy { get; }
+ 
+     public static AeronFoundationHost Create(IAppPaths? customPaths = null, IClock? customClock = null)
+     {
+@@ -139,7 +146,10 @@ public sealed class AeronFoundationHost : IAsyncDisposable
+             configStore,
+             eventBus,
+             lifecycle,
+-            healthService);
++            healthService,
++            // No production identity or permission provider exists yet. This is an
++            // explicit unavailable state, not a mock or a permissive fallback.
++            new PolicyDecisionEngine(identityProvider: null, grants: null));
+     }
+ 
+     public async ValueTask DisposeAsync()
+diff --git a/src/Aeron.Infrastructure/RedactingLogger.cs b/src/Aeron.Infrastructure/RedactingLogger.cs
+index a339d1218db4455e0a191eb97610ab375fe7160a..1b7de67ba530f85687bc5bcbaf8334f4207e6c9a 100644
+--- a/src/Aeron.Infrastructure/RedactingLogger.cs
++++ b/src/Aeron.Infrastructure/RedactingLogger.cs
+@@ -212,7 +212,7 @@ public sealed class RedactingLogger : IAeronLogger
+ 
+                     var key = _redactionFilter.Redact(pair.Key);
+                     var value = RedactionFilter.IsSensitiveKeyName(pair.Key)
+-                        ? RedactionFilter.RedactedPlaceholder
++                        ? _redactionFilter.Redact(RedactionFilter.RedactedPlaceholder)
+                         : _redactionFilter.Redact(pair.Value);
+ 
+                     writer.WriteString(key, value);
+diff --git a/src/Aeron.Security/OperationBinding.cs b/src/Aeron.Security/OperationBinding.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..5183a57e3a3fe00a05acdb9a29dbfaed42872aac
+--- /dev/null
++++ b/src/Aeron.Security/OperationBinding.cs
+@@ -0,0 +1,120 @@
++using System.Buffers.Binary;
++using System.Security.Cryptography;
++using System.Text;
++using Aeron.Contracts;
++
++namespace Aeron.Security;
++
++/// <summary>
++/// Versioned, length-framed HMAC for exact operation identity. The key is random and
++/// process-local: all bindings become unverifiable after disposal or restart. It is not
++/// a durable approval store and does not authenticate or dispatch an operation.
++/// </summary>
++public sealed class OperationBinding : IDisposable
++{
++    private static readonly UTF8Encoding StrictUtf8 = new(false, true);
++    private static readonly byte[] Domain = Encoding.ASCII.GetBytes("AERON-OPERATION-BINDING-V1");
++    private readonly Lock _sync = new();
++    private readonly byte[] _key = RandomNumberGenerator.GetBytes(32);
++    private bool _disposed;
++
++    public byte[] Compute(
++        Guid approvalId,
++        SecurityAction action,
++        string requestingSubject,
++        string target,
++        string policyVersion,
++        ReadOnlySpan<byte> exactParameters)
++    {
++        if (approvalId == Guid.Empty || !Enum.IsDefined(action) || action == SecurityAction.Unknown)
++        {
++            throw new ArgumentException("An approval ID and known action are required.");
++        }
++
++        ArgumentException.ThrowIfNullOrWhiteSpace(requestingSubject);
++        ArgumentException.ThrowIfNullOrWhiteSpace(target);
++        ArgumentException.ThrowIfNullOrWhiteSpace(policyVersion);
++
++        lock (_sync)
++        {
++            ObjectDisposedException.ThrowIf(_disposed, this);
++            using var hash = IncrementalHash.CreateHMAC(HashAlgorithmName.SHA256, _key);
++            AppendBytes(hash, Domain);
++            Span<byte> id = stackalloc byte[16];
++            if (!approvalId.TryWriteBytes(id))
++            {
++                throw new InvalidOperationException("Unable to encode approval ID.");
++            }
++
++            AppendBytes(hash, id);
++            Span<byte> encodedAction = stackalloc byte[sizeof(int)];
++            BinaryPrimitives.WriteInt32BigEndian(encodedAction, (int)action);
++            AppendBytes(hash, encodedAction);
++            AppendText(hash, requestingSubject);
++            AppendText(hash, target);
++            AppendText(hash, policyVersion);
++            AppendBytes(hash, exactParameters);
++            return hash.GetHashAndReset();
++        }
++    }
++
++    public bool Verify(
++        ReadOnlySpan<byte> expectedBinding,
++        Guid approvalId,
++        SecurityAction action,
++        string requestingSubject,
++        string target,
++        string policyVersion,
++        ReadOnlySpan<byte> exactParameters)
++    {
++        if (expectedBinding.Length != 32)
++        {
++            return false;
++        }
++
++        var actual = Compute(approvalId, action, requestingSubject, target, policyVersion, exactParameters);
++        try
++        {
++            return CryptographicOperations.FixedTimeEquals(expectedBinding, actual);
++        }
++        finally
++        {
++            CryptographicOperations.ZeroMemory(actual);
++        }
++    }
++
++    public void Dispose()
++    {
++        lock (_sync)
++        {
++            if (!_disposed)
++            {
++                CryptographicOperations.ZeroMemory(_key);
++                _disposed = true;
++            }
++        }
++    }
++
++    private static void AppendText(IncrementalHash hash, string value)
++    {
++        // Strict UTF-8 rejects invalid surrogate sequences instead of mapping distinct
++        // strings to the same replacement character. No normalization is performed.
++        var bytes = StrictUtf8.GetBytes(value);
++        try
++        {
++            AppendBytes(hash, bytes);
++        }
++        finally
++        {
++            CryptographicOperations.ZeroMemory(bytes);
++        }
++    }
++
++    private static void AppendBytes(IncrementalHash hash, ReadOnlySpan<byte> bytes)
++    {
++        Span<byte> length = stackalloc byte[sizeof(int)];
++        BinaryPrimitives.WriteInt32BigEndian(length, bytes.Length);
++        hash.AppendData(length);
++        hash.AppendData(bytes);
++    }
++}
+diff --git a/src/Aeron.Security/OwnerApprovalService.cs b/src/Aeron.Security/OwnerApprovalService.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..f4bc4a2646f23554a333da0a1ae8ebf194379b79
+--- /dev/null
++++ b/src/Aeron.Security/OwnerApprovalService.cs
+@@ -0,0 +1,269 @@
++using System.Security.Cryptography;
++using Aeron.Contracts;
++
++namespace Aeron.Security;
++
++/// <summary>
++/// In-process, volatile approval state. Restart/disposal invalidates all approvals.
++/// Requires trusted identity, grants, clock and durable audit providers; none are
++/// configured by the production host yet. Consumption is not an external dispatch
++/// boundary and must not by itself be treated as permission to perform a side effect.
++/// </summary>
++public sealed class OwnerApprovalService : IDisposable
++{
++    // An unavailable capacity is safer than unbounded memory growth. No retention
++    // or deletion policy is implied by this volatile engineering limit.
++    private const int MaxVolatileApprovals = 1024;
++
++    private sealed class Entry(
++        SecurityRequest request, VerifiedIdentity identity, byte[] binding, DateTimeOffset expiresAt)
++    {
++        public SecurityRequest Request { get; } = request;
++        public VerifiedIdentity Identity { get; } = identity;
++        public byte[] Binding { get; } = binding;
++        public DateTimeOffset ExpiresAt { get; } = expiresAt;
++        public ApprovalStatus Status { get; set; } = ApprovalStatus.Pending;
++    }
++
++    private readonly Lock _sync = new();
++    private readonly Dictionary<Guid, Entry> _entries = [];
++    private readonly PolicyDecisionEngine _policy;
++    private readonly OwnerAuthorityGuard _authority;
++    private readonly IClock _clock;
++    private readonly IApprovalAuditSink _audit;
++    private readonly OperationBinding _binding = new();
++    private bool _disposed;
++    private bool _insideAudit;
++    private bool _auditUnhealthy;
++
++    public OwnerApprovalService(ITrustedIdentityProvider identityProvider, IPermissionGrantStore grants, IClock clock, IApprovalAuditSink audit)
++    {
++        ArgumentNullException.ThrowIfNull(identityProvider);
++        ArgumentNullException.ThrowIfNull(grants);
++        ArgumentNullException.ThrowIfNull(clock);
++        ArgumentNullException.ThrowIfNull(audit);
++        _policy = new PolicyDecisionEngine(identityProvider, grants);
++        _authority = new OwnerAuthorityGuard(identityProvider);
++        _clock = clock;
++        _audit = audit;
++    }
++
++    public ApprovalResult Request(
++        SecurityRequest request, ReadOnlyMemory<byte> actorEvidence, string target,
++        ReadOnlySpan<byte> exactParameters, DateTimeOffset expiresAt)
++    {
++        lock (_sync)
++        {
++            if (_disposed || _insideAudit)
++            {
++                return Rejected();
++            }
++
++            if (_auditUnhealthy)
++            {
++                return AuditUnavailable();
++            }
++
++            try
++            {
++                var decision = _policy.EvaluateAndIdentify(request, actorEvidence, out var identity);
++                if (decision.Disposition != PolicyDisposition.RequireOwnerApproval || identity is null ||
++                    expiresAt <= _clock.UtcNow || _entries.Count >= MaxVolatileApprovals)
++                {
++                    return RejectAudited();
++                }
++
++                var id = Guid.NewGuid();
++                var digest = _binding.Compute(id, request.Action, identity.SubjectId, target, request.PolicyVersion, exactParameters);
++                if (!Record(id, ApprovalEventKind.Requested))
++                {
++                    CryptographicOperations.ZeroMemory(digest);
++                    return AuditUnavailable();
++                }
++
++                _entries.Add(id, new Entry(request, identity, digest, expiresAt));
++                return new ApprovalResult(ApprovalResultCode.Success, id);
++            }
++            catch (Exception)
++            {
++                return RejectAudited();
++            }
++        }
++    }
++
++    public ApprovalResult Decide(Guid id, ReadOnlyMemory<byte> ownerEvidence, bool approve)
++    {
++        lock (_sync)
++        {
++            if (_disposed || _insideAudit)
++            {
++                return Rejected();
++            }
++
++            if (_auditUnhealthy)
++            {
++                return AuditUnavailable();
++            }
++
++            try
++            {
++                if (!_authority.VerifyOwner(ownerEvidence) || !_entries.TryGetValue(id, out var entry) ||
++                    entry.Status != ApprovalStatus.Pending || IsExpired(id, entry))
++                {
++                    return RejectAudited();
++                }
++
++                var kind = approve ? ApprovalEventKind.Approved : ApprovalEventKind.Denied;
++                if (!Record(id, kind))
++                {
++                    return AuditUnavailable();
++                }
++
++                entry.Status = approve ? ApprovalStatus.Approved : ApprovalStatus.Denied;
++                return new ApprovalResult(ApprovalResultCode.Success, id);
++            }
++            catch (Exception)
++            {
++                return RejectAudited();
++            }
++        }
++    }
++
++    public ApprovalResult Cancel(Guid id, ReadOnlyMemory<byte> ownerEvidence) =>
++        Invalidate(id, ownerEvidence, ApprovalStatus.Cancelled, ApprovalEventKind.Cancelled);
++
++    public ApprovalResult Revoke(Guid id, ReadOnlyMemory<byte> ownerEvidence) =>
++        Invalidate(id, ownerEvidence, ApprovalStatus.Revoked, ApprovalEventKind.Revoked);
++
++    public ApprovalResult Consume(
++        Guid id, SecurityRequest request, ReadOnlyMemory<byte> actorEvidence,
++        string target, ReadOnlySpan<byte> exactParameters)
++    {
++        lock (_sync)
++        {
++            if (_disposed || _insideAudit)
++            {
++                return Rejected();
++            }
++
++            if (_auditUnhealthy)
++            {
++                return AuditUnavailable();
++            }
++
++            try
++            {
++                if (!_entries.TryGetValue(id, out var entry) || entry.Status != ApprovalStatus.Approved || IsExpired(id, entry))
++                {
++                    return RejectAudited();
++                }
++
++                var decision = _policy.EvaluateAndIdentify(request, actorEvidence, out var identity);
++                if (decision.Disposition != PolicyDisposition.RequireOwnerApproval || identity is null ||
++                    request != entry.Request || identity != entry.Identity ||
++                    !_binding.Verify(entry.Binding, id, request.Action, identity.SubjectId, target, request.PolicyVersion, exactParameters))
++                {
++                    return RejectAudited();
++                }
++
++                if (!Record(id, ApprovalEventKind.Consumed))
++                {
++                    return AuditUnavailable();
++                }
++
++                entry.Status = ApprovalStatus.Consumed;
++                return new ApprovalResult(ApprovalResultCode.Success, id);
++            }
++            catch (Exception)
++            {
++                return RejectAudited();
++            }
++        }
++    }
++
++    private ApprovalResult Invalidate(Guid id, ReadOnlyMemory<byte> ownerEvidence, ApprovalStatus status, ApprovalEventKind kind)
++    {
++        lock (_sync)
++        {
++            if (_disposed || _insideAudit)
++            {
++                return Rejected();
++            }
++
++            if (!_authority.VerifyOwner(ownerEvidence) || !_entries.TryGetValue(id, out var entry) ||
++                entry.Status is not (ApprovalStatus.Pending or ApprovalStatus.Approved))
++            {
++                return RejectAudited();
++            }
++
++            // Revocation wins even if the audit sink is unhealthy. The caller is told
++            // about audit failure rather than silently reverting the revocation.
++            entry.Status = status;
++            var recorded = Record(id, kind);
++            return recorded && !_auditUnhealthy ? new ApprovalResult(ApprovalResultCode.Success, id) : AuditUnavailable();
++        }
++    }
++
++    private bool IsExpired(Guid id, Entry entry)
++    {
++        if (entry.ExpiresAt <= _clock.UtcNow)
++        {
++            // Once observed expired, a later backwards wall-clock change cannot revive it.
++            entry.Status = ApprovalStatus.Revoked;
++            _ = Record(id, ApprovalEventKind.Expired);
++            return true;
++        }
++
++        return false;
++    }
++
++    private bool Record(Guid id, ApprovalEventKind kind)
++    {
++        try
++        {
++            _insideAudit = true;
++            var recorded = _audit.TryAppend(new ApprovalAuditEvent(id, kind)) && !_disposed;
++            if (!recorded)
++            {
++                _auditUnhealthy = true;
++            }
++
++            return recorded;
++        }
++        catch (Exception)
++        {
++            _auditUnhealthy = true;
++            return false;
++        }
++        finally
++        {
++            _insideAudit = false;
++        }
++    }
++
++    private ApprovalResult RejectAudited() =>
++        !_auditUnhealthy && Record(Guid.Empty, ApprovalEventKind.Rejected) ? Rejected() : AuditUnavailable();
++
++    private static ApprovalResult Rejected() => new(ApprovalResultCode.Rejected, Guid.Empty);
++    private static ApprovalResult AuditUnavailable() => new(ApprovalResultCode.AuditUnavailable, Guid.Empty);
++
++    public void Dispose()
++    {
++        lock (_sync)
++        {
++            if (_disposed)
++            {
++                return;
++            }
++
++            _disposed = true;
++            foreach (var entry in _entries.Values)
++            {
++                CryptographicOperations.ZeroMemory(entry.Binding);
++            }
++
++            _entries.Clear();
++            _binding.Dispose();
++        }
++    }
++}
+diff --git a/src/Aeron.Security/OwnerAuthorityGuard.cs b/src/Aeron.Security/OwnerAuthorityGuard.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..8079ad1793bd0edf7af6b1b6990bd62d31332923
+--- /dev/null
++++ b/src/Aeron.Security/OwnerAuthorityGuard.cs
+@@ -0,0 +1,62 @@
++using Aeron.Contracts;
++
++namespace Aeron.Security;
++
++/// <summary>
++/// Authenticates through an explicitly supplied trusted provider. This guard does not
++/// provide MFA or OS isolation; a missing or failing provider is never an Owner identity.
++/// </summary>
++public sealed class OwnerAuthorityGuard
++{
++    private readonly ITrustedIdentityProvider? _identityProvider;
++
++    public OwnerAuthorityGuard(ITrustedIdentityProvider? identityProvider)
++    {
++        _identityProvider = identityProvider;
++    }
++
++    public bool VerifyOwner(ReadOnlyMemory<byte> evidence) =>
++        TryAuthenticate(evidence, out var identity, out _) && identity!.Kind == IdentityKind.Owner;
++
++    internal bool TryAuthenticate(
++        ReadOnlyMemory<byte> evidence,
++        out VerifiedIdentity? identity,
++        out PolicyReason reason)
++    {
++        identity = null;
++        if (_identityProvider is null)
++        {
++            reason = PolicyReason.IdentityProviderUnavailable;
++            return false;
++        }
++
++        if (evidence.IsEmpty)
++        {
++            reason = PolicyReason.IdentityRejected;
++            return false;
++        }
++
++        try
++        {
++            if (!_identityProvider.TryAuthenticate(evidence, out var verified) ||
++                verified is null ||
++                string.IsNullOrWhiteSpace(verified.SubjectId) ||
++                verified.SubjectId.Length > 256 ||
++                (verified.Kind != IdentityKind.Owner && verified.Kind != IdentityKind.Agent))
++            {
++                reason = PolicyReason.IdentityRejected;
++                return false;
++            }
++
++            identity = verified;
++            reason = PolicyReason.Allowed;
++            return true;
++        }
++        catch (Exception)
++        {
++            // Provider failures must not become authentication successes or leak evidence.
++            reason = PolicyReason.IdentityRejected;
++            return false;
++        }
++    }
++}
+diff --git a/src/Aeron.Security/PolicyDecisionEngine.cs b/src/Aeron.Security/PolicyDecisionEngine.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..be4c42e14615cd1bfca930ba6b173d9ca3e5d061
+--- /dev/null
++++ b/src/Aeron.Security/PolicyDecisionEngine.cs
+@@ -0,0 +1,132 @@
++using Aeron.Contracts;
++
++namespace Aeron.Security;
++
++/// <summary>
++/// A conservative engineering policy for the constraints in CONSTRAINTS.md. Requests
++/// must originate at a trusted action boundary. RequireOwnerApproval is not permission
++/// to execute; approval consumption and dispatch are not yet implemented here.
++/// </summary>
++public sealed class PolicyDecisionEngine : ISecurityPolicy
++{
++    public const string CurrentPolicyVersion = "m2-boundary-1";
++
++    private readonly OwnerAuthorityGuard _authority;
++    private readonly IPermissionGrantStore? _grants;
++
++    public PolicyDecisionEngine(ITrustedIdentityProvider? identityProvider, IPermissionGrantStore? grants)
++    {
++        _authority = new OwnerAuthorityGuard(identityProvider);
++        _grants = grants;
++    }
++
++    public SecurityDecision Evaluate(SecurityRequest? request, ReadOnlyMemory<byte> identityEvidence) =>
++        EvaluateAndIdentify(request, identityEvidence, out _);
++
++    internal SecurityDecision EvaluateAndIdentify(
++        SecurityRequest? request,
++        ReadOnlyMemory<byte> identityEvidence,
++        out VerifiedIdentity? identity)
++    {
++        identity = null;
++        if (request is null ||
++            !Enum.IsDefined(request.Action) || request.Action == SecurityAction.Unknown ||
++            !Enum.IsDefined(request.Sensitivity) || request.Sensitivity == DataSensitivity.Unknown)
++        {
++            return Decision(PolicyDisposition.Deny, PolicyReason.InvalidRequest);
++        }
++
++        if (!string.Equals(request.PolicyVersion, CurrentPolicyVersion, StringComparison.Ordinal))
++        {
++            return Decision(PolicyDisposition.Deny, PolicyReason.PolicyVersionMismatch);
++        }
++
++        var (tier, domains) = MapAction(request.Action);
++        if (tier == LocalAuthorityTier.L3)
++        {
++            return Decision(PolicyDisposition.Deny, PolicyReason.ForbiddenAction, tier, domains);
++        }
++
++        if (request.Sensitivity == DataSensitivity.Secret)
++        {
++            // No general-purpose operation is authorized to handle credentials in this
++            // initial boundary. Vault access needs a separate, explicitly defined path.
++            return Decision(PolicyDisposition.Deny, PolicyReason.SecretDisclosureForbidden, tier, domains);
++        }
++
++        if (request.Sensitivity == DataSensitivity.LocalPrivate && domains != GovernanceDomain.None)
++        {
++            domains |= GovernanceDomain.G2;
++        }
++
++        if (!_authority.TryAuthenticate(identityEvidence, out identity, out var identityReason))
++        {
++            return Decision(PolicyDisposition.Deny, identityReason, tier, domains);
++        }
++
++        if (request.Action == SecurityAction.ChangeAuthority && identity!.Kind != IdentityKind.Owner)
++        {
++            return Decision(PolicyDisposition.Deny, PolicyReason.OwnerRequired, tier, domains);
++        }
++
++        if (_grants is null)
++        {
++            return Decision(PolicyDisposition.Deny, PolicyReason.PermissionStoreUnavailable, tier, domains);
++        }
++
++        try
++        {
++            if (!_grants.IsGranted(identity!, request.Action))
++            {
++                return Decision(PolicyDisposition.Deny, PolicyReason.PermissionDenied, tier, domains);
++            }
++        }
++        catch (Exception)
++        {
++            return Decision(PolicyDisposition.Deny, PolicyReason.PermissionStoreUnavailable, tier, domains);
++        }
++
++        // Local reads also require a trusted path/scope boundary; this policy does
++        // not yet receive a resolved handle or protect against path substitution.
++        if (request.Action == SecurityAction.ReadLocalData)
++        {
++            return Decision(PolicyDisposition.Deny, PolicyReason.ScopeValidationUnavailable, tier, domains);
++        }
++
++        // No verified $0 gateway/provider/model policy exists in this phase. Do not
++        // substitute an unverified endpoint or a paid/local fallback.
++        if ((domains & GovernanceDomain.G1) != 0)
++        {
++            return Decision(PolicyDisposition.Deny, PolicyReason.GatewayPolicyUnavailable, tier, domains);
++        }
++
++        if (tier == LocalAuthorityTier.L2 ||
++            (domains & (GovernanceDomain.G2 | GovernanceDomain.G3 | GovernanceDomain.G4)) != 0)
++        {
++            return Decision(PolicyDisposition.RequireOwnerApproval, PolicyReason.ApprovalRequired, tier, domains);
++        }
++
++        return Decision(PolicyDisposition.Allow, PolicyReason.Allowed, tier, domains);
++    }
++
++    private static (LocalAuthorityTier Tier, GovernanceDomain Domains) MapAction(SecurityAction action) => action switch
++    {
++        SecurityAction.ReadApplicationState => (LocalAuthorityTier.L0, GovernanceDomain.None),
++        SecurityAction.ReadLocalData => (LocalAuthorityTier.L1, GovernanceDomain.None),
++        SecurityAction.ModifyLocalData => (LocalAuthorityTier.L2, GovernanceDomain.None),
++        SecurityAction.RemoteInference => (LocalAuthorityTier.None, GovernanceDomain.G1),
++        SecurityAction.DiscloseData => (LocalAuthorityTier.None, GovernanceDomain.G2),
++        SecurityAction.SendCommunication => (LocalAuthorityTier.None, GovernanceDomain.G3),
++        SecurityAction.ModifyExternalAccount => (LocalAuthorityTier.None, GovernanceDomain.G4),
++        SecurityAction.ChangeAuthority => (LocalAuthorityTier.L2, GovernanceDomain.None),
++        SecurityAction.ExecuteSkillScript => (LocalAuthorityTier.L3, GovernanceDomain.None),
++        _ => (LocalAuthorityTier.L3, GovernanceDomain.None)
++    };
++
++    private static SecurityDecision Decision(
++        PolicyDisposition disposition,
++        PolicyReason reason,
++        LocalAuthorityTier tier = LocalAuthorityTier.None,
++        GovernanceDomain domains = GovernanceDomain.None) =>
++        new(disposition, reason, CurrentPolicyVersion, tier, domains);
++}
+diff --git a/src/Aeron.Security/RedactionFilter.cs b/src/Aeron.Security/RedactionFilter.cs
+index 97f227230dc77629ded540a946b05520a2d0a9da..6a50bcca9b0bd4dbc7897951672412eb919d2464 100644
+--- a/src/Aeron.Security/RedactionFilter.cs
++++ b/src/Aeron.Security/RedactionFilter.cs
+@@ -4,9 +4,9 @@ using Aeron.Contracts;
+ namespace Aeron.Security;
+ 
+ /// <summary>
+-/// Thread-safe, unconditional secret redaction engine for AERON logs, errors, and diagnostics.
+-/// Ensures zero raw credentials, API keys, tokens, passwords, private keys, or registered
+-/// secret values ever reach persistent logs or UI diagnostics.
++/// Thread-safe defense-in-depth redaction for AERON logs, errors, and diagnostics.
++/// Registered values and recognized patterns are scrubbed; unrecognized secrets must be
++/// excluded at their source rather than relying on pattern matching as a security boundary.
+ /// </summary>
+ public sealed class RedactionFilter : IRedactionFilter
+ {
+@@ -108,11 +108,6 @@ public sealed class RedactionFilter : IRedactionFilter
+         }
+ 
+         var trimmed = sensitiveValue.Trim();
+-        if (trimmed.Length < MinimumRegisteredSecretLength ||
+-            string.Equals(trimmed, RedactedPlaceholder, StringComparison.Ordinal))
+-        {
+-            return;
+-        }
+ 
+         lock (_sync)
+         {
+@@ -153,8 +148,8 @@ public sealed class RedactionFilter : IRedactionFilter
+         }
+         catch (RegexMatchTimeoutException)
+         {
+-            // Fail closed: never return unredacted input on pattern timeout.
+-            return RedactedPlaceholder;
++            // The marker itself might contain a registered value; scrub it as well.
++            return ReplaceRegisteredSecrets(RedactedPlaceholder);
+         }
+     }
+ 
+@@ -209,10 +204,20 @@ public sealed class RedactionFilter : IRedactionFilter
+         var result = value;
+         foreach (var secret in secrets)
+         {
+-            if (result.Contains(secret, StringComparison.Ordinal))
++            if (!result.Contains(secret, StringComparison.Ordinal))
+             {
+-                result = result.Replace(secret, RedactedPlaceholder, StringComparison.Ordinal);
++                continue;
+             }
++
++            // A short secret can match ordinary prose or the replacement marker itself.
++            // Suppress the entire field instead of returning a marker that might contain it.
++            if (secret.Length < MinimumRegisteredSecretLength ||
++                RedactedPlaceholder.Contains(secret, StringComparison.Ordinal))
++            {
++                return string.Empty;
++            }
++
++            result = result.Replace(secret, RedactedPlaceholder, StringComparison.Ordinal);
+         }
+ 
+         return result;
+diff --git a/tests/Aeron.Core.Tests/SecurityCompositionTests.cs b/tests/Aeron.Core.Tests/SecurityCompositionTests.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..0f9be37876c77f7c15f060b91e1ef7fec74bb91f
+--- /dev/null
++++ b/tests/Aeron.Core.Tests/SecurityCompositionTests.cs
+@@ -0,0 +1,23 @@
++using Aeron.Contracts;
++using Aeron.Infrastructure;
++using Aeron.Security;
++using Xunit;
++
++namespace Aeron.Core.Tests;
++
++public sealed class SecurityCompositionTests
++{
++    [Fact]
++    public async Task FoundationHost_ExposesExplicitlyUnavailableFailClosedPolicy()
++    {
++        var path = Path.Combine(Path.GetTempPath(), $"aeron-policy-test-{Guid.NewGuid():N}");
++        await using var host = AeronFoundationHost.Create(AppPaths.FromRoot(path));
++
++        var result = host.SecurityPolicy.Evaluate(
++            new SecurityRequest(SecurityAction.ReadApplicationState, DataSensitivity.Routine, PolicyDecisionEngine.CurrentPolicyVersion),
++            new byte[] { 1 });
++
++        Assert.Equal(PolicyDisposition.Deny, result.Disposition);
++        Assert.Equal(PolicyReason.IdentityProviderUnavailable, result.Reason);
++    }
++}
+diff --git a/tests/Aeron.Infrastructure.Tests/ShortSecretLoggerTests.cs b/tests/Aeron.Infrastructure.Tests/ShortSecretLoggerTests.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..4e3cc6f5f8f3b2084050ca1e94d30af39f05f684
+--- /dev/null
++++ b/tests/Aeron.Infrastructure.Tests/ShortSecretLoggerTests.cs
+@@ -0,0 +1,55 @@
++using System.Text.Json;
++using Aeron.Contracts;
++using Aeron.Security;
++using Xunit;
++
++namespace Aeron.Infrastructure.Tests;
++
++public sealed class ShortSecretLoggerTests
++{
++    [Fact]
++    public void Logger_SuppressesRegisteredShortValuesAcrossStructuredFieldsAndExceptions()
++    {
++        using var sandbox = new TempSandbox();
++        var filter = new RedactionFilter();
++        const string secret = "Q7!";
++        filter.RegisterSensitiveValue(secret);
++
++        using (var logger = new RedactingLogger(sandbox.Paths, filter))
++        {
++            logger.Log(AeronLogLevel.Error, $"category {secret}", $"message {secret}",
++                new Dictionary<string, string?> { [$"key {secret}"] = $"value {secret}" },
++                new InvalidOperationException($"outer {secret}", new InvalidOperationException($"inner {secret}")));
++            logger.Flush();
++        }
++
++        var content = File.ReadAllText(sandbox.Paths.ActiveLogFilePath);
++        Assert.DoesNotContain(secret, content, StringComparison.Ordinal);
++        using var json = JsonDocument.Parse(content);
++        Assert.Equal(string.Empty, json.RootElement.GetProperty("category").GetString());
++        Assert.Equal(string.Empty, json.RootElement.GetProperty("message").GetString());
++        Assert.Equal(string.Empty, json.RootElement.GetProperty("exception").GetProperty("message").GetString());
++        Assert.Equal(string.Empty, json.RootElement.GetProperty("exception").GetProperty("innerException").GetProperty("message").GetString());
++    }
++
++    [Fact]
++    public void Logger_ScrubsSensitiveFieldMarkerWhenMarkerIsRegisteredSecret()
++    {
++        using var sandbox = new TempSandbox();
++        var filter = new RedactionFilter();
++        filter.RegisterSensitiveValue(RedactionFilter.RedactedPlaceholder);
++
++        using (var logger = new RedactingLogger(sandbox.Paths, filter))
++        {
++            logger.Log(AeronLogLevel.Information, "category", "message",
++                new Dictionary<string, string?> { ["password"] = "synthetic-password" });
++            logger.Flush();
++        }
++
++        var content = File.ReadAllText(sandbox.Paths.ActiveLogFilePath);
++        Assert.DoesNotContain(RedactionFilter.RedactedPlaceholder, content, StringComparison.Ordinal);
++        Assert.DoesNotContain("synthetic-password", content, StringComparison.Ordinal);
++        using var json = JsonDocument.Parse(content);
++        Assert.Equal(string.Empty, json.RootElement.GetProperty("properties").GetProperty("password").GetString());
++    }
++}
+diff --git a/tests/Aeron.Security.Tests/OperationBindingTests.cs b/tests/Aeron.Security.Tests/OperationBindingTests.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..7e85354f0ab3f03c6be7fd0818745e99afb94ff4
+--- /dev/null
++++ b/tests/Aeron.Security.Tests/OperationBindingTests.cs
+@@ -0,0 +1,63 @@
++using System.Text;
++using Aeron.Contracts;
++using Xunit;
++
++namespace Aeron.Security.Tests;
++
++public sealed class OperationBindingTests
++{
++    [Fact]
++    public void ExactOperationChangesInvalidateBindingEvenWhenDisplaysRedactTheSame()
++    {
++        using var binding = new OperationBinding();
++        var id = Guid.NewGuid();
++        var original = Encoding.UTF8.GetBytes("token=synthetic-alpha");
++        var modified = Encoding.UTF8.GetBytes("token=synthetic-bravo");
++        var digest = binding.Compute(id, SecurityAction.DiscloseData, "agent-a", "destination-a", "policy-1", original);
++
++        Assert.True(binding.Verify(digest, id, SecurityAction.DiscloseData, "agent-a", "destination-a", "policy-1", original));
++        Assert.False(binding.Verify(digest, id, SecurityAction.DiscloseData, "agent-a", "destination-a", "policy-1", modified));
++        Assert.False(binding.Verify(digest, Guid.NewGuid(), SecurityAction.DiscloseData, "agent-a", "destination-a", "policy-1", original));
++        Assert.False(binding.Verify(digest, id, SecurityAction.ModifyExternalAccount, "agent-a", "destination-a", "policy-1", original));
++        Assert.False(binding.Verify(digest, id, SecurityAction.DiscloseData, "agent-b", "destination-a", "policy-1", original));
++        Assert.False(binding.Verify(digest, id, SecurityAction.DiscloseData, "agent-a", "destination-b", "policy-1", original));
++        Assert.False(binding.Verify(digest, id, SecurityAction.DiscloseData, "agent-a", "destination-a", "policy-2", original));
++        Assert.DoesNotContain("synthetic-alpha", Convert.ToHexString(digest), StringComparison.Ordinal);
++    }
++
++    [Fact]
++    public void LengthFramingPreventsAmbiguousFieldConcatenation()
++    {
++        using var binding = new OperationBinding();
++        var id = Guid.NewGuid();
++        var digest = binding.Compute(id, SecurityAction.DiscloseData, "a", "bc", "v1", []);
++        Assert.False(binding.Verify(digest, id, SecurityAction.DiscloseData, "ab", "c", "v1", []));
++    }
++
++    [Fact]
++    public void FreshInstanceCannotVerifyAnotherInstancesBinding()
++    {
++        using var first = new OperationBinding();
++        using var second = new OperationBinding();
++        var id = Guid.NewGuid();
++        var digest = first.Compute(id, SecurityAction.DiscloseData, "actor", "target", "v1", []);
++        Assert.False(second.Verify(digest, id, SecurityAction.DiscloseData, "actor", "target", "v1", []));
++    }
++
++    [Fact]
++    public void InvalidUnicodeIsRejectedRatherThanCanonicalizedToReplacementCharacters()
++    {
++        using var binding = new OperationBinding();
++        Assert.Throws<EncoderFallbackException>(() =>
++            binding.Compute(Guid.NewGuid(), SecurityAction.DiscloseData, "actor", "\ud800", "v1", []));
++    }
++
++    [Fact]
++    public void DisposalInvalidatesFutureBindings()
++    {
++        var binding = new OperationBinding();
++        binding.Dispose();
++        Assert.Throws<ObjectDisposedException>(() =>
++            binding.Compute(Guid.NewGuid(), SecurityAction.DiscloseData, "actor", "target", "v1", []));
++    }
++}
+diff --git a/tests/Aeron.Security.Tests/OwnerApprovalServiceTests.cs b/tests/Aeron.Security.Tests/OwnerApprovalServiceTests.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..e108b402fba5e9b6f6cfb3a7d1cca622e70cd371
+--- /dev/null
++++ b/tests/Aeron.Security.Tests/OwnerApprovalServiceTests.cs
+@@ -0,0 +1,181 @@
++using System.Text;
++using Aeron.Contracts;
++using Xunit;
++
++namespace Aeron.Security.Tests;
++
++public sealed class OwnerApprovalServiceTests
++{
++    private static readonly byte[] Owner = [1];
++    private static readonly byte[] Agent = [2];
++    private static readonly byte[] OtherAgent = [3];
++    private static readonly byte[] Payload = Encoding.UTF8.GetBytes("synthetic-operation-alpha");
++    private static readonly SecurityRequest Request = new(SecurityAction.DiscloseData, DataSensitivity.LocalPrivate, PolicyDecisionEngine.CurrentPolicyVersion);
++
++    private sealed class Identities : ITrustedIdentityProvider
++    {
++        public bool TryAuthenticate(ReadOnlyMemory<byte> evidence, out VerifiedIdentity? identity)
++        {
++            identity = evidence.Span.SequenceEqual(Owner) ? new VerifiedIdentity("owner", IdentityKind.Owner)
++                : evidence.Span.SequenceEqual(Agent) ? new VerifiedIdentity("agent", IdentityKind.Agent)
++                : evidence.Span.SequenceEqual(OtherAgent) ? new VerifiedIdentity("other", IdentityKind.Agent)
++                : null;
++            return identity is not null;
++        }
++    }
++
++    private sealed class ChangingIdentity : ITrustedIdentityProvider
++    {
++        public IdentityKind Kind { get; set; } = IdentityKind.Agent;
++        public bool TryAuthenticate(ReadOnlyMemory<byte> evidence, out VerifiedIdentity? identity)
++        {
++            identity = evidence.Span.SequenceEqual(Owner)
++                ? new VerifiedIdentity("owner", IdentityKind.Owner)
++                : new VerifiedIdentity("shared-subject", Kind);
++            return true;
++        }
++    }
++
++    private sealed class Grants : IPermissionGrantStore
++    {
++        public bool Enabled { get; set; } = true;
++        public bool IsGranted(VerifiedIdentity identity, SecurityAction action) => Enabled;
++    }
++
++    private sealed class Clock : IClock
++    {
++        public DateTimeOffset UtcNow { get; set; } = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
++    }
++
++    private sealed class Audit : IApprovalAuditSink
++    {
++        public bool Available { get; set; } = true;
++        public List<ApprovalAuditEvent> Events { get; } = [];
++        public bool TryAppend(ApprovalAuditEvent auditEvent)
++        {
++            if (!Available) return false;
++            Events.Add(auditEvent);
++            return true;
++        }
++    }
++
++    [Fact]
++    public void ApprovalRequiresOwnerAndBindsActorTargetAndExactParametersWithSingleUse()
++    {
++        var clock = new Clock();
++        var audit = new Audit();
++        using var service = new OwnerApprovalService(new Identities(), new Grants(), clock, audit);
++        var created = service.Request(Request, Agent, "destination", Payload, clock.UtcNow.AddMinutes(1));
++        Assert.Equal(ApprovalResultCode.Success, created.Code);
++        Assert.Equal(ApprovalResultCode.Rejected, service.Decide(created.ApprovalId, Agent, true).Code);
++        Assert.Equal(ApprovalResultCode.Success, service.Decide(created.ApprovalId, Owner, true).Code);
++        Assert.Equal(ApprovalResultCode.Rejected, service.Consume(created.ApprovalId, Request, OtherAgent, "destination", Payload).Code);
++        Assert.Equal(ApprovalResultCode.Rejected, service.Consume(created.ApprovalId, Request, Agent, "different", Payload).Code);
++        Assert.Equal(ApprovalResultCode.Rejected, service.Consume(created.ApprovalId, Request, Agent, "destination", Encoding.UTF8.GetBytes("synthetic-operation-bravo")).Code);
++        Assert.Equal(ApprovalResultCode.Success, service.Consume(created.ApprovalId, Request, Agent, "destination", Payload).Code);
++        Assert.Equal(ApprovalResultCode.Rejected, service.Consume(created.ApprovalId, Request, Agent, "destination", Payload).Code);
++        Assert.Contains(audit.Events, e => e.Kind == ApprovalEventKind.Consumed);
++    }
++
++    [Fact]
++    public void ExpiryRevocationAndPermissionWithdrawalDenyConsumption()
++    {
++        var clock = new Clock();
++        var grants = new Grants();
++        using var service = new OwnerApprovalService(new Identities(), grants, clock, new Audit());
++        var expired = service.Request(Request, Agent, "destination", Payload, clock.UtcNow.AddSeconds(1)).ApprovalId;
++        Assert.Equal(ApprovalResultCode.Success, service.Decide(expired, Owner, true).Code);
++        clock.UtcNow = clock.UtcNow.AddSeconds(2);
++        Assert.Equal(ApprovalResultCode.Rejected, service.Consume(expired, Request, Agent, "destination", Payload).Code);
++        clock.UtcNow = clock.UtcNow.AddSeconds(-2);
++        Assert.Equal(ApprovalResultCode.Rejected, service.Consume(expired, Request, Agent, "destination", Payload).Code);
++
++        var revoked = service.Request(Request, Agent, "destination", Payload, clock.UtcNow.AddMinutes(1)).ApprovalId;
++        Assert.Equal(ApprovalResultCode.Success, service.Decide(revoked, Owner, true).Code);
++        Assert.Equal(ApprovalResultCode.Success, service.Revoke(revoked, Owner).Code);
++        Assert.Equal(ApprovalResultCode.Rejected, service.Consume(revoked, Request, Agent, "destination", Payload).Code);
++
++        var withdrawn = service.Request(Request, Agent, "destination", Payload, clock.UtcNow.AddMinutes(1)).ApprovalId;
++        Assert.Equal(ApprovalResultCode.Success, service.Decide(withdrawn, Owner, true).Code);
++        grants.Enabled = false;
++        Assert.Equal(ApprovalResultCode.Rejected, service.Consume(withdrawn, Request, Agent, "destination", Payload).Code);
++    }
++
++    [Fact]
++    public void CancellationAndOwnerDenialAreTerminal()
++    {
++        var clock = new Clock();
++        using var service = new OwnerApprovalService(new Identities(), new Grants(), clock, new Audit());
++        var cancelled = service.Request(Request, Agent, "destination", Payload, clock.UtcNow.AddMinutes(1)).ApprovalId;
++        Assert.Equal(ApprovalResultCode.Rejected, service.Cancel(cancelled, Agent).Code);
++        Assert.Equal(ApprovalResultCode.Success, service.Cancel(cancelled, Owner).Code);
++        Assert.Equal(ApprovalResultCode.Rejected, service.Decide(cancelled, Owner, true).Code);
++        Assert.Equal(ApprovalResultCode.Rejected, service.Consume(cancelled, Request, Agent, "destination", Payload).Code);
++
++        var denied = service.Request(Request, Agent, "destination", Payload, clock.UtcNow.AddMinutes(1)).ApprovalId;
++        Assert.Equal(ApprovalResultCode.Success, service.Decide(denied, Owner, false).Code);
++        Assert.Equal(ApprovalResultCode.Rejected, service.Decide(denied, Owner, true).Code);
++        Assert.Equal(ApprovalResultCode.Rejected, service.Consume(denied, Request, Agent, "destination", Payload).Code);
++    }
++
++    [Fact]
++    public void AuditFailureBlocksRequestsAndConsumptionEvenIfTheSinkReturns()
++    {
++        var clock = new Clock();
++        var failedAudit = new Audit { Available = false };
++        using var failedService = new OwnerApprovalService(new Identities(), new Grants(), clock, failedAudit);
++        Assert.Equal(ApprovalResultCode.AuditUnavailable, failedService.Request(Request, Agent, "destination", Payload, clock.UtcNow.AddMinutes(1)).Code);
++        failedAudit.Available = true;
++        Assert.Equal(ApprovalResultCode.AuditUnavailable, failedService.Request(Request, Agent, "destination", Payload, clock.UtcNow.AddMinutes(1)).Code);
++
++        var audit = new Audit();
++        using var service = new OwnerApprovalService(new Identities(), new Grants(), clock, audit);
++        var id = service.Request(Request, Agent, "destination", Payload, clock.UtcNow.AddMinutes(1)).ApprovalId;
++        Assert.Equal(ApprovalResultCode.Success, service.Decide(id, Owner, true).Code);
++        audit.Available = false;
++        Assert.Equal(ApprovalResultCode.AuditUnavailable, service.Consume(id, Request, Agent, "destination", Payload).Code);
++        Assert.Equal(ApprovalResultCode.AuditUnavailable, service.Revoke(id, Owner).Code);
++        audit.Available = true;
++        Assert.Equal(ApprovalResultCode.AuditUnavailable, service.Consume(id, Request, Agent, "destination", Payload).Code);
++    }
++
++    [Fact]
++    public void ChangedIdentityKindCannotConsumeAnApprovalForTheSameSubject()
++    {
++        var clock = new Clock();
++        var identities = new ChangingIdentity();
++        using var service = new OwnerApprovalService(identities, new Grants(), clock, new Audit());
++        var id = service.Request(Request, Agent, "destination", Payload, clock.UtcNow.AddMinutes(1)).ApprovalId;
++        Assert.NotEqual(Guid.Empty, id);
++        Assert.Equal(ApprovalResultCode.Success, service.Decide(id, Owner, true).Code);
++        identities.Kind = IdentityKind.Owner;
++        Assert.Equal(ApprovalResultCode.Rejected, service.Consume(id, Request, Agent, "destination", Payload).Code);
++    }
++
++    [Fact]
++    public async Task ConcurrentConsumesHaveExactlyOneWinner()
++    {
++        var clock = new Clock();
++        using var service = new OwnerApprovalService(new Identities(), new Grants(), clock, new Audit());
++        var id = service.Request(Request, Agent, "destination", Payload, clock.UtcNow.AddMinutes(1)).ApprovalId;
++        Assert.Equal(ApprovalResultCode.Success, service.Decide(id, Owner, true).Code);
++        var results = await Task.WhenAll(Enumerable.Range(0, 16).Select(_ =>
++            Task.Run(() => service.Consume(id, Request, Agent, "destination", Payload))));
++        Assert.Equal(1, results.Count(r => r.Code == ApprovalResultCode.Success));
++        Assert.Equal(15, results.Count(r => r.Code == ApprovalResultCode.Rejected));
++    }
++
++    [Fact]
++    public async Task ConcurrentConsumeAndRevocationNeverBothSucceed()
++    {
++        var clock = new Clock();
++        using var service = new OwnerApprovalService(new Identities(), new Grants(), clock, new Audit());
++        var id = service.Request(Request, Agent, "destination", Payload, clock.UtcNow.AddMinutes(1)).ApprovalId;
++        Assert.Equal(ApprovalResultCode.Success, service.Decide(id, Owner, true).Code);
++        var consume = Task.Run(() => service.Consume(id, Request, Agent, "destination", Payload));
++        var revoke = Task.Run(() => service.Revoke(id, Owner));
++        var results = await Task.WhenAll(consume, revoke);
++        Assert.Equal(1, results.Count(r => r.Code == ApprovalResultCode.Success));
++        Assert.Equal(ApprovalResultCode.Rejected, service.Consume(id, Request, Agent, "destination", Payload).Code);
++    }
++}
+diff --git a/tests/Aeron.Security.Tests/SecurityPolicyTests.cs b/tests/Aeron.Security.Tests/SecurityPolicyTests.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..98ab4849f087c898635d575579836abfbd62027b
+--- /dev/null
++++ b/tests/Aeron.Security.Tests/SecurityPolicyTests.cs
+@@ -0,0 +1,119 @@
++using Aeron.Contracts;
++using Xunit;
++
++namespace Aeron.Security.Tests;
++
++public sealed class SecurityPolicyTests
++{
++    private static readonly byte[] Evidence = [1, 2, 3];
++    private const string Version = PolicyDecisionEngine.CurrentPolicyVersion;
++
++    private sealed class TestIdentityProvider(VerifiedIdentity? identity, bool throws = false) : ITrustedIdentityProvider
++    {
++        public bool TryAuthenticate(ReadOnlyMemory<byte> evidence, out VerifiedIdentity? result)
++        {
++            if (throws)
++            {
++                throw new InvalidOperationException("synthetic authentication failure");
++            }
++
++            result = identity;
++            return !evidence.IsEmpty && result is not null;
++        }
++    }
++
++    private sealed class TestGrantStore(bool granted, bool throws = false) : IPermissionGrantStore
++    {
++        public bool IsGranted(VerifiedIdentity identity, SecurityAction action)
++        {
++            if (throws)
++            {
++                throw new InvalidOperationException("synthetic store failure");
++            }
++
++            return granted;
++        }
++    }
++
++    private static PolicyDecisionEngine Engine(IdentityKind kind = IdentityKind.Owner, bool granted = true) =>
++        new(new TestIdentityProvider(new VerifiedIdentity("subject", kind)), new TestGrantStore(granted));
++
++    private static SecurityRequest Request(SecurityAction action, DataSensitivity sensitivity = DataSensitivity.Routine) =>
++        new(action, sensitivity, Version);
++
++    [Fact]
++    public void MissingIdentityAndGrantProvidersDoNotAuthenticateOrGrant()
++    {
++        var decision = new PolicyDecisionEngine(null, null).Evaluate(Request(SecurityAction.ReadApplicationState), Evidence);
++        Assert.Equal(PolicyDisposition.Deny, decision.Disposition);
++        Assert.Equal(PolicyReason.IdentityProviderUnavailable, decision.Reason);
++        Assert.False(new OwnerAuthorityGuard(null).VerifyOwner(Evidence));
++    }
++
++    [Fact]
++    public void BadOrUnavailableIdentityCannotImpersonateOwner()
++    {
++        Assert.False(new OwnerAuthorityGuard(new TestIdentityProvider(new VerifiedIdentity("agent", IdentityKind.Agent))).VerifyOwner(Evidence));
++        Assert.False(new OwnerAuthorityGuard(new TestIdentityProvider(new VerifiedIdentity("owner", IdentityKind.Owner))).VerifyOwner(ReadOnlyMemory<byte>.Empty));
++        Assert.False(new OwnerAuthorityGuard(new TestIdentityProvider(null, throws: true)).VerifyOwner(Evidence));
++        Assert.False(new OwnerAuthorityGuard(new TestIdentityProvider(new VerifiedIdentity(" ", IdentityKind.Owner))).VerifyOwner(Evidence));
++        Assert.True(new OwnerAuthorityGuard(new TestIdentityProvider(new VerifiedIdentity("owner", IdentityKind.Owner))).VerifyOwner(Evidence));
++    }
++
++    [Fact]
++    public void UnrecognizedActionClassificationAndPolicyVersionAreDenied()
++    {
++        var engine = Engine();
++        Assert.Equal(PolicyReason.InvalidRequest, engine.Evaluate(null, Evidence).Reason);
++        Assert.Equal(PolicyReason.InvalidRequest, engine.Evaluate(Request((SecurityAction)999), Evidence).Reason);
++        Assert.Equal(PolicyReason.InvalidRequest, engine.Evaluate(Request(SecurityAction.ReadLocalData, (DataSensitivity)999), Evidence).Reason);
++        Assert.Equal(PolicyReason.InvalidRequest, engine.Evaluate(Request(SecurityAction.ReadLocalData, DataSensitivity.Unknown), Evidence).Reason);
++        Assert.Equal(PolicyReason.PolicyVersionMismatch, engine.Evaluate(new SecurityRequest(SecurityAction.ReadLocalData, DataSensitivity.Routine, "old"), Evidence).Reason);
++    }
++
++    [Fact]
++    public void MissingPermissionOrFailedStoreDeniesEvenOwner()
++    {
++        var request = Request(SecurityAction.ReadApplicationState);
++        Assert.Equal(PolicyReason.PermissionDenied, Engine(granted: false).Evaluate(request, Evidence).Reason);
++        var engine = new PolicyDecisionEngine(new TestIdentityProvider(new VerifiedIdentity("owner", IdentityKind.Owner)), new TestGrantStore(true, throws: true));
++        Assert.Equal(PolicyReason.PermissionStoreUnavailable, engine.Evaluate(request, Evidence).Reason);
++        Assert.Equal(PolicyDisposition.Allow, Engine().Evaluate(request, Evidence).Disposition);
++    }
++
++    [Fact]
++    public void AgentCannotChangeAuthorityAndOwnerCannotSkipApproval()
++    {
++        var request = Request(SecurityAction.ChangeAuthority);
++        Assert.Equal(PolicyReason.OwnerRequired, Engine(IdentityKind.Agent).Evaluate(request, Evidence).Reason);
++        Assert.Equal(PolicyDisposition.RequireOwnerApproval, Engine().Evaluate(request, Evidence).Disposition);
++    }
++
++    [Theory]
++    [InlineData(SecurityAction.ModifyLocalData)]
++    [InlineData(SecurityAction.DiscloseData)]
++    [InlineData(SecurityAction.SendCommunication)]
++    [InlineData(SecurityAction.ModifyExternalAccount)]
++    public void ConsequentialActionsRequireApprovalEvenForOwner(SecurityAction action)
++    {
++        Assert.Equal(PolicyDisposition.RequireOwnerApproval, Engine().Evaluate(Request(action), Evidence).Disposition);
++    }
++
++    [Fact]
++    public void PrivateExternalCommunicationRequiresBothG2AndG3()
++    {
++        var result = Engine().Evaluate(Request(SecurityAction.SendCommunication, DataSensitivity.LocalPrivate), Evidence);
++        Assert.Equal(PolicyDisposition.RequireOwnerApproval, result.Disposition);
++        Assert.Equal(GovernanceDomain.G2 | GovernanceDomain.G3, result.Domains);
++    }
++
++    [Fact]
++    public void SecretsScriptsAndUnverifiedInferenceNeverPass()
++    {
++        var engine = Engine();
++        Assert.Equal(PolicyReason.SecretDisclosureForbidden, engine.Evaluate(Request(SecurityAction.DiscloseData, DataSensitivity.Secret), Evidence).Reason);
++        Assert.Equal(PolicyReason.ForbiddenAction, engine.Evaluate(Request(SecurityAction.ExecuteSkillScript), Evidence).Reason);
++        Assert.Equal(PolicyReason.GatewayPolicyUnavailable, engine.Evaluate(Request(SecurityAction.RemoteInference), Evidence).Reason);
++        Assert.Equal(PolicyReason.ScopeValidationUnavailable, engine.Evaluate(Request(SecurityAction.ReadLocalData), Evidence).Reason);
++    }
++}
+diff --git a/tests/Aeron.Security.Tests/ShortSecretRedactionTests.cs b/tests/Aeron.Security.Tests/ShortSecretRedactionTests.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..ba1a1d117621f0ebc5c71e90d625228a0bb9cc3e
+--- /dev/null
++++ b/tests/Aeron.Security.Tests/ShortSecretRedactionTests.cs
+@@ -0,0 +1,45 @@
++using Xunit;
++
++namespace Aeron.Security.Tests;
++
++public sealed class ShortSecretRedactionTests
++{
++    [Theory]
++    [InlineData("Q")]
++    [InlineData("Q7")]
++    [InlineData("Q7!")]
++    public void RegisteredShortValues_AreNotSilentlyIgnored(string secret)
++    {
++        var filter = new RedactionFilter();
++        filter.RegisterSensitiveValue(secret);
++
++        Assert.True(filter.ContainsPotentialSecret($"before {secret} after"));
++        Assert.Equal(string.Empty, filter.Redact($"before {secret} after"));
++        Assert.Equal("unrelated text", filter.Redact("unrelated text"));
++    }
++
++    [Theory]
++    [InlineData("REDACT")]
++    [InlineData("[REDACTED]")]
++    public void RegisteredValueInsideReplacementMarker_SuppressesWholeField(string secret)
++    {
++        var filter = new RedactionFilter();
++        filter.RegisterSensitiveValue(secret);
++
++        Assert.True(filter.ContainsPotentialSecret(secret));
++        Assert.Equal(string.Empty, filter.Redact($"before {secret} after"));
++        // The marker produced by a recognized credential pattern must be checked too.
++        Assert.Equal(string.Empty, filter.Redact("password=synthetic-value"));
++    }
++
++    [Fact]
++    public void LongerRegisteredValues_ContinueToUseTheRedactionMarker()
++    {
++        var filter = new RedactionFilter();
++        filter.RegisterSensitiveValue("synthetic-value-9876");
++
++        var output = filter.Redact("before synthetic-value-9876 after");
++        Assert.Equal("before [REDACTED] after", output);
++        Assert.Equal(output, filter.Redact(output));
++    }
++}

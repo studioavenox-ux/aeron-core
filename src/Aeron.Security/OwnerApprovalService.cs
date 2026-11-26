@@ -16,10 +16,10 @@ public sealed class OwnerApprovalService : IDisposable
     private const int MaxVolatileApprovals = 1024;
 
     private sealed class Entry(
-        SecurityRequest request, string subject, byte[] binding, DateTimeOffset expiresAt)
+        SecurityRequest request, VerifiedIdentity identity, byte[] binding, DateTimeOffset expiresAt)
     {
         public SecurityRequest Request { get; } = request;
-        public string Subject { get; } = subject;
+        public VerifiedIdentity Identity { get; } = identity;
         public byte[] Binding { get; } = binding;
         public DateTimeOffset ExpiresAt { get; } = expiresAt;
         public ApprovalStatus Status { get; set; } = ApprovalStatus.Pending;
@@ -74,14 +74,14 @@ public sealed class OwnerApprovalService : IDisposable
                 }
 
                 var id = Guid.NewGuid();
-                var digest = _binding.Compute(id, request.Action, identity.SubjectId, target, request.PolicyVersion, exactParameters);
+                var digest = _binding.Compute(id, request.Action, identity.SubjectId, identity.Kind, target, request.PolicyVersion, exactParameters);
                 if (!Record(id, ApprovalEventKind.Requested))
                 {
                     CryptographicOperations.ZeroMemory(digest);
                     return AuditUnavailable();
                 }
 
-                _entries.Add(id, new Entry(request, identity.SubjectId, digest, expiresAt));
+                _entries.Add(id, new Entry(request, identity, digest, expiresAt));
                 return new ApprovalResult(ApprovalResultCode.Success, id);
             }
             catch (Exception)
@@ -160,8 +160,8 @@ public sealed class OwnerApprovalService : IDisposable
 
                 var decision = _policy.EvaluateAndIdentify(request, actorEvidence, out var identity);
                 if (decision.Disposition != PolicyDisposition.RequireOwnerApproval || identity is null ||
-                    request != entry.Request || !string.Equals(identity.SubjectId, entry.Subject, StringComparison.Ordinal) ||
-                    !_binding.Verify(entry.Binding, id, request.Action, identity.SubjectId, target, request.PolicyVersion, exactParameters))
+                    request != entry.Request || identity != entry.Identity ||
+                    !_binding.Verify(entry.Binding, id, request.Action, identity.SubjectId, identity.Kind, target, request.PolicyVersion, exactParameters))
                 {
                     return RejectAudited();
                 }
