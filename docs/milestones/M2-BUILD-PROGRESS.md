@@ -6,7 +6,11 @@ The Project Owner explicitly authorized M2 BUILD against specification pack v1.1
 
 The Owner reports that GPT-6 retrieved and inspected the historical H1–H4 texts in ChatGPT Library. Arena did not independently open or hash those original bytes, and this document does not assert original file versions or signatures. See `docs/specifications/M2/SOURCE-AND-PROVENANCE-REGISTER.md` for the existing evidence boundary.
 
-The exact existing gate in `docs/governance/U-08R-REPLACEMENT.md` says: “Before implementing any Milestone 2+ subsystem governed by `U-8R`, the authoritative `U-8R` specification must be supplied and confirmed by the Project Owner.” BUILD authorization and the Owner's designation of the v1.1.1 baseline are explicit; original byte provenance and some historical details remain unresolved. This progress record neither asserts Arena verified the originals nor silently waives or amends that gate. Independently defined conservative boundaries are being implemented; undefined policy remains fail-closed.
+The Owner confirmed v1.1.1 as the authoritative implementation baseline and granted M2 BUILD. The implementation gate in `docs/governance/U-08R-REPLACEMENT.md` is satisfied for this build by that confirmation; historical source recovery is a separate matter. Original U-8 remains unresolved and original file byte hashes unavailable; no signatures or independent verification are claimed. Earlier blocked-status statements in the pack predate this authorization. U-8R selections are preserved, not reselected.
+
+## Phase A status
+
+**PHASE A — WINDOWS CI BUILD AND TESTS PASSED; SECURITY IMPLEMENTATION INCOMPLETE.** This refers to PR #4's CI, associated with head `b6101fe7990eb8ed7041411676e4dd4b18884e15`, not the later uncommitted correction or Phase B code. The Owner reports 76 tests passed and a zero-warning Release build; GitHub confirms the CI job succeeded, but its logs could not be retrieved in this environment to independently verify those totals. No physical APEX runtime verification or M2 acceptance is implied. See `M2-PHASE-AB-CORRECTION-REVIEW.md` for reconciliation, unvalidated changes and remaining boundaries.
 
 ## Current code boundary
 
@@ -21,4 +25,4 @@ The exact existing gate in `docs/governance/U-08R-REPLACEMENT.md` says: “Befor
 
 Production MFA/device enrollment and recovery, protected Owner UI, policy provisioning, comprehensive permission/session/device revocation, durable independently anchored audit, Windows vault, privacy/memory controls, emergency response, security notifications, backup/restore, and WPF action-boundary integration remain unfinished. Google Drive remains the recorded destination, not standing approval to upload. No side-effect dispatch is authorized by this prototype.
 
-The available sandbox is Linux without `dotnet`; the Windows GitHub Actions workflow checks out committed revisions and cannot inspect these uncommitted changes without an unauthorized push. APEX is not exposed to this session. Syntax parsing is not compilation or execution. No M2 runtime, Windows, acceptance or performance result is claimed here.
+The available sandbox is Linux without `dotnet`; CI on the earlier PR cannot validate the later uncommitted correction or Phase B changes. APEX is not exposed to this session. Syntax parsing is not compilation or execution. Apart from the earlier CI result noted above, no new build, tests, M2 runtime, acceptance or performance result is claimed here.
