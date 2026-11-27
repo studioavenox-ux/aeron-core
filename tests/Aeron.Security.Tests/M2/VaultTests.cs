@@ -125,12 +125,15 @@ public sealed class VaultTests : IDisposable
         Assert.False(stored.IsSuccess);
         Assert.Empty(Directory.GetFiles(_root, "*.secret"));
 
-        // A different protector cannot unprotect an existing key: retrieval fails closed.
-        var healthyVault = CreateVault(subdirectory: "other");
+        // A different protector cannot unprotect the existing key, so retrieval fails
+        // closed instead of returning garbage or plaintext.
+        var healthyVault = CreateVault();
         Assert.True(healthyVault.Store("synthetic-key", Encoding.UTF8.GetBytes("synthetic-secret")).IsSuccess);
+        Assert.True(healthyVault.Retrieve("synthetic-key", out _).IsSuccess);
 
-        var differentProtector = CreateVault(protector: new InMemoryDataProtector(), subdirectory: "other");
-        Assert.Equal(VaultOutcome.Unavailable, differentProtector.Retrieve("synthetic-key", out _).Outcome);
+        var differentProtector = CreateVault(protector: new InMemoryDataProtector());
+        Assert.Equal(VaultOutcome.Unavailable, differentProtector.Retrieve("synthetic-key", out var leaked).Outcome);
+        Assert.Null(leaked);
     }
 
     [Fact]

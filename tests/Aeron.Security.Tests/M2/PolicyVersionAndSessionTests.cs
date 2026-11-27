@@ -111,8 +111,8 @@ public sealed class PolicyVersionAndSessionTests
     {
         using var harness = new KernelHarness();
         using var agent = new TestAgent("agent-alpha");
-        harness.Kernel.IdentityAuthority.RegisterAgent(agent.Registration, harness.OwnerEvidence);
-        var session = harness.Kernel.IdentityAuthority.AuthenticateAgent(agent.Authenticate()).Value;
+        harness.RegisterAgent(agent.Registration);
+        var session = harness.AuthenticateAgent(agent.Authenticate());
         harness.Grant(agent.AgentId, IdentityKind.Agent, SecurityCapability.ReadLocalData);
 
         var operation = new OperationIdentity(

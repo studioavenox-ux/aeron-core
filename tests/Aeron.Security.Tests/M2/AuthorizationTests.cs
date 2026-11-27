@@ -74,15 +74,14 @@ public sealed class AuthorizationTests
     {
         using var harness = new KernelHarness();
         using var agent = new TestAgent("agent-alpha");
-        harness.Kernel.IdentityAuthority.RegisterAgent(agent.Registration, harness.OwnerEvidence);
-        var agentSession = harness.Kernel.IdentityAuthority.AuthenticateAgent(agent.Authenticate());
-        Assert.True(agentSession.IsSuccess);
+        harness.RegisterAgent(agent.Registration);
+        var agentSession = harness.AuthenticateAgent(agent.Authenticate());
 
         var admin = new PermissionAdministration(
             harness.Kernel.Permissions, harness.Kernel.IdentityAuthority, harness.Kernel.Audit);
 
         // An agent session id used as Owner evidence is not Owner authority.
-        var agentEvidence = KernelHarness.SessionEvidence(agentSession.Value.SessionId);
+        var agentEvidence = KernelHarness.SessionEvidence(agentSession.SessionId);
         var selfGrant = admin.Grant(agentEvidence, agent.AgentId, IdentityKind.Agent, SecurityCapability.ViewSecurityStatus);
         Assert.False(selfGrant.IsSuccess);
         Assert.Equal("OWNER_REQUIRED", selfGrant.ErrorCode);
@@ -101,8 +100,8 @@ public sealed class AuthorizationTests
     {
         using var harness = new KernelHarness();
         using var agent = new TestAgent("agent-alpha");
-        harness.Kernel.IdentityAuthority.RegisterAgent(agent.Registration, harness.OwnerEvidence);
-        var session = harness.Kernel.IdentityAuthority.AuthenticateAgent(agent.Authenticate()).Value;
+        harness.RegisterAgent(agent.Registration);
+        var session = harness.AuthenticateAgent(agent.Authenticate());
 
         harness.Grant(agent.AgentId, IdentityKind.Agent, SecurityCapability.ViewSecurityStatus);
 
@@ -125,11 +124,11 @@ public sealed class AuthorizationTests
         using var alpha = new TestAgent("agent-alpha");
         using var bravo = new TestAgent("agent-bravo");
 
-        harness.Kernel.IdentityAuthority.RegisterAgent(alpha.Registration, harness.OwnerEvidence);
-        harness.Kernel.IdentityAuthority.RegisterAgent(bravo.Registration, harness.OwnerEvidence);
+        harness.RegisterAgent(alpha.Registration);
+        harness.RegisterAgent(bravo.Registration);
 
-        var alphaSession = harness.Kernel.IdentityAuthority.AuthenticateAgent(alpha.Authenticate()).Value;
-        var bravoSession = harness.Kernel.IdentityAuthority.AuthenticateAgent(bravo.Authenticate()).Value;
+        var alphaSession = harness.AuthenticateAgent(alpha.Authenticate());
+        var bravoSession = harness.AuthenticateAgent(bravo.Authenticate());
 
         harness.Grant(alpha.AgentId, IdentityKind.Agent, SecurityCapability.ViewSecurityStatus);
 
@@ -157,8 +156,8 @@ public sealed class AuthorizationTests
     {
         using var harness = new KernelHarness();
         using var agent = new TestAgent("agent-alpha");
-        harness.Kernel.IdentityAuthority.RegisterAgent(agent.Registration, harness.OwnerEvidence);
-        var session = harness.Kernel.IdentityAuthority.AuthenticateAgent(agent.Authenticate()).Value;
+        harness.RegisterAgent(agent.Registration);
+        var session = harness.AuthenticateAgent(agent.Authenticate());
 
         // Grant the capability that would map to an approval-required operation family.
         harness.Grant(agent.AgentId, IdentityKind.Agent, SecurityCapability.ReadLocalData);
@@ -184,8 +183,8 @@ public sealed class AuthorizationTests
     {
         using var harness = new KernelHarness();
         using var agent = new TestAgent("agent-alpha");
-        harness.Kernel.IdentityAuthority.RegisterAgent(agent.Registration, harness.OwnerEvidence);
-        var session = harness.Kernel.IdentityAuthority.AuthenticateAgent(agent.Authenticate()).Value;
+        harness.RegisterAgent(agent.Registration);
+        var session = harness.AuthenticateAgent(agent.Authenticate());
         harness.Grant(agent.AgentId, IdentityKind.Agent, SecurityCapability.ViewSecurityStatus);
 
         harness.Clock.Advance(SessionPolicy.Default.AgentSessionLifetime + TimeSpan.FromSeconds(1));

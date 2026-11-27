@@ -126,6 +126,24 @@ public sealed class KernelHarness : IDisposable
         return result.Value;
     }
 
+    /// <summary>
+    /// Registers an agent and fails with the real refusal reason if the Owner check or the
+    /// registry rejects it, so a setup error is never mistaken for the behaviour under test.
+    /// </summary>
+    public void RegisterAgent(AgentRegistration registration)
+    {
+        var result = Kernel.IdentityAuthority.TryRegisterAgent(registration, OwnerEvidence);
+        Assert.True(result.IsSuccess, $"Agent registration failed: {result.ErrorCode} {result.ErrorMessage}");
+    }
+
+    /// <summary>Authenticates an agent and fails with the real refusal reason.</summary>
+    public AuthenticatedSession AuthenticateAgent(AgentAuthenticationRequest request)
+    {
+        var result = Kernel.IdentityAuthority.AuthenticateAgent(request);
+        Assert.True(result.IsSuccess, $"Agent authentication failed: {result.ErrorCode} {result.ErrorMessage}");
+        return result.Value;
+    }
+
     public void Grant(string subjectId, IdentityKind kind, SecurityCapability capability)
     {
         var result = new PermissionAdministration(Kernel.Permissions, Kernel.IdentityAuthority, Kernel.Audit)

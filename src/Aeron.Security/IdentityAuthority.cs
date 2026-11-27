@@ -469,21 +469,50 @@ public sealed class IdentityAuthority : IIdentityAuthority
 
     public void RegisterAgent(AgentRegistration registration, ReadOnlyMemory<byte> ownerEvidence)
     {
+        // The interface is void, but a caller still needs to know why a registration was
+        // refused; the diagnosing overload is the supported way to find out.
+        _ = TryRegisterAgent(registration, ownerEvidence);
+    }
+
+    /// <summary>
+    /// Owner-provisioned agent registration that reports the refusal reason. The reason is
+    /// a stable non-secret code plus a message safe to surface to the Owner.
+    /// </summary>
+    public Result TryRegisterAgent(AgentRegistration registration, ReadOnlyMemory<byte> ownerEvidence)
+    {
         ArgumentNullException.ThrowIfNull(registration);
 
-        if (!TryResolveOwnerSession(ownerEvidence, out _))
+        if (!TryResolveOwnerSession(ownerEvidence, out var ownerFailure))
         {
             Record(DurableAuditKind.AgentRegisteredDenied, SecurityCodes.AgentRegisteredDenied);
-            return;
+            return Result.Failure("OWNER_REQUIRED", ownerFailure);
+        }
+
+        if (!AgentRegistration.IsValidAgentId(registration.AgentId) ||
+            !AgentRegistration.IsValidDisplayName(registration.DisplayName) ||
+            registration.PublicKey.Length == 0 ||
+            registration.PublicKey.Length > AgentRegistration.MaxPublicKeyBytes)
+        {
+            Record(DurableAuditKind.AgentRegisteredDenied, SecurityCodes.AgentRegisteredDenied);
+            return Result.Failure("INVALID_REQUEST", "The agent registration is not well formed.");
         }
 
         if (!_agents.TryRegister(registration))
         {
             Record(DurableAuditKind.AgentRegisteredDenied, SecurityCodes.AgentRegisteredDenied);
-            return;
+            return Result.Failure("REGISTRATION_REFUSED",
+                "The registry refused the registration (revoked, duplicate, or full).");
         }
 
-        Record(DurableAuditKind.AgentRegistered, SecurityCodes.AgentRegistered);
+        if (!Record(DurableAuditKind.AgentRegistered, SecurityCodes.AgentRegistered))
+        {
+            // Remove the registration so an unaudited agent cannot remain provisioned.
+            _agents.TryRevoke(registration.AgentId);
+            return Result.Failure("AUDIT_UNAVAILABLE",
+                "The registration was refused because the audit trail could not record it.");
+        }
+
+        return Result.Success();
     }
 
     public void RevokeAgent(string agentId, ReadOnlyMemory<byte> ownerEvidence)

@@ -83,6 +83,7 @@ public sealed class WindowsCredentialVault : IWindowsCredentialVault
         {
             try
             {
+                Directory.CreateDirectory(_directory);
                 var path = PathFor(validName);
 
                 if (File.Exists(path))

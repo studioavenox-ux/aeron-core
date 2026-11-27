@@ -21,8 +21,8 @@ public sealed class ApprovalEngineTests
     {
         var harness = new KernelHarness();
         var agent = new TestAgent("agent-alpha");
-        harness.Kernel.IdentityAuthority.RegisterAgent(agent.Registration, harness.OwnerEvidence);
-        var session = harness.Kernel.IdentityAuthority.AuthenticateAgent(agent.Authenticate()).Value;
+        harness.RegisterAgent(agent.Registration);
+        var session = harness.AuthenticateAgent(agent.Authenticate());
         harness.Grant(agent.AgentId, IdentityKind.Agent, SecurityCapability.ReadLocalData);
         return (harness, agent, session);
     }
@@ -88,8 +88,8 @@ public sealed class ApprovalEngineTests
 
         // Different actor session (other agent): rejected before binding comparison.
         using var other = new TestAgent("agent-bravo");
-        harness.Kernel.IdentityAuthority.RegisterAgent(other.Registration, harness.OwnerEvidence);
-        var otherSession = harness.Kernel.IdentityAuthority.AuthenticateAgent(other.Authenticate()).Value;
+        harness.RegisterAgent(other.Registration);
+        var otherSession = harness.AuthenticateAgent(other.Authenticate());
         harness.Grant(other.AgentId, IdentityKind.Agent, SecurityCapability.ReadLocalData);
 
         var crossActor = harness.Kernel.Dispatcher.AuthorizeApproved(otherSession.SessionId, approvalId, Approvable(), Payload);

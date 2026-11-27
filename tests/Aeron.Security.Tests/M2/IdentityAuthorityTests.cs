@@ -113,19 +113,17 @@ public sealed class IdentityAuthorityTests
         using var harness = new KernelHarness();
         using var agent = new TestAgent("agent-alpha");
 
-        harness.Kernel.IdentityAuthority.RegisterAgent(agent.Registration, harness.OwnerEvidence);
-        var agentSession = harness.Kernel.IdentityAuthority.AuthenticateAgent(agent.Authenticate());
-        Assert.True(agentSession.IsSuccess, agentSession.ErrorMessage);
+        harness.RegisterAgent(agent.Registration);
+        var agentSession = harness.AuthenticateAgent(agent.Authenticate());
 
         // Expiry is observed by the clock and is terminal.
         harness.Clock.Advance(SessionPolicy.Default.AgentSessionLifetime + TimeSpan.FromSeconds(1));
-        Assert.False(harness.Kernel.IdentityAuthority.TryResolveActor(agentSession.Value.SessionId, out _));
+        Assert.False(harness.Kernel.IdentityAuthority.TryResolveActor(agentSession.SessionId, out _));
 
         // A fresh agent session then gets preempted by the Owner.
-        var second = harness.Kernel.IdentityAuthority.AuthenticateAgent(agent.Authenticate());
-        Assert.True(second.IsSuccess, second.ErrorMessage);
+        var second = harness.AuthenticateAgent(agent.Authenticate());
         Assert.True(harness.Kernel.Preemption.TryPreempt(harness.OwnerEvidence, "owner.preempt_test"));
-        Assert.False(harness.Kernel.IdentityAuthority.TryResolveActor(second.Value.SessionId, out _));
+        Assert.False(harness.Kernel.IdentityAuthority.TryResolveActor(second.SessionId, out _));
     }
 
     [Fact]
@@ -139,7 +137,7 @@ public sealed class IdentityAuthorityTests
         var unknown = harness.Kernel.IdentityAuthority.AuthenticateAgent(agent.Authenticate());
         Assert.Equal("IDENTITY_REJECTED", unknown.ErrorCode);
 
-        harness.Kernel.IdentityAuthority.RegisterAgent(agent.Registration, harness.OwnerEvidence);
+        harness.RegisterAgent(agent.Registration);
 
         // Replay of a nonce: the store refuses the second use.
         var first = agent.Authenticate();
@@ -152,10 +150,15 @@ public sealed class IdentityAuthorityTests
         var forged = harness.Kernel.IdentityAuthority.AuthenticateAgent(impostor.Authenticate());
         Assert.Equal("IDENTITY_REJECTED", forged.ErrorCode);
 
-        // Agent registration requires the Owner.
+        // Agent registration requires live Owner authority: empty evidence is refused with
+        // a diagnosable reason and the agent stays unregistered.
         using var agent2 = new TestAgent("agent-beta");
-        harness.Kernel.IdentityAuthority.RegisterAgent(agent2.Registration, ReadOnlyMemory<byte>.Empty);
-        Assert.Equal("IDENTITY_REJECTED", harness.Kernel.IdentityAuthority.AuthenticateAgent(agent2.Authenticate()).ErrorCode);
+        var unauthorized = harness.Kernel.IdentityAuthority.TryRegisterAgent(
+            agent2.Registration, ReadOnlyMemory<byte>.Empty);
+        Assert.False(unauthorized.IsSuccess);
+        Assert.Equal("OWNER_REQUIRED", unauthorized.ErrorCode);
+        Assert.Equal("IDENTITY_REJECTED",
+            harness.Kernel.IdentityAuthority.AuthenticateAgent(agent2.Authenticate()).ErrorCode);
     }
 
     [Fact]
@@ -164,17 +167,16 @@ public sealed class IdentityAuthorityTests
         using var harness = new KernelHarness();
         using var agent = new TestAgent("agent-alpha");
 
-        harness.Kernel.IdentityAuthority.RegisterAgent(agent.Registration, harness.OwnerEvidence);
-        var session = harness.Kernel.IdentityAuthority.AuthenticateAgent(agent.Authenticate());
-        Assert.True(session.IsSuccess);
+        harness.RegisterAgent(agent.Registration);
+        var session = harness.AuthenticateAgent(agent.Authenticate());
 
         harness.Kernel.IdentityAuthority.RevokeAgent(agent.AgentId, harness.OwnerEvidence);
 
-        Assert.False(harness.Kernel.IdentityAuthority.TryResolveActor(session.Value.SessionId, out _));
+        Assert.False(harness.Kernel.IdentityAuthority.TryResolveActor(session.SessionId, out _));
         Assert.Equal("AGENT_REVOKED", harness.Kernel.IdentityAuthority.AuthenticateAgent(agent.Authenticate()).ErrorCode);
 
         // Revocation is terminal for the process: re-registration is refused.
-        harness.Kernel.IdentityAuthority.RegisterAgent(agent.Registration, harness.OwnerEvidence);
+        harness.RegisterAgent(agent.Registration);
         Assert.Equal("AGENT_REVOKED", harness.Kernel.IdentityAuthority.AuthenticateAgent(agent.Authenticate()).ErrorCode);
     }
 
@@ -184,7 +186,7 @@ public sealed class IdentityAuthorityTests
         using var harness = new KernelHarness();
         using var agent = new TestAgent("agent-alpha");
 
-        harness.Kernel.IdentityAuthority.RegisterAgent(agent.Registration, harness.OwnerEvidence);
+        harness.RegisterAgent(agent.Registration);
 
         Assert.True(harness.Kernel.Preemption.TrySetEmergencyStop(harness.OwnerEvidence, "test.stop"));
         Assert.True(harness.Kernel.Preemption.IsEmergencyStopActive);
