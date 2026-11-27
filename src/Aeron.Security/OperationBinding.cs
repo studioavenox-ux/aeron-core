@@ -6,38 +6,70 @@ using Aeron.Contracts;
 namespace Aeron.Security;
 
 /// <summary>
-/// Versioned, length-framed HMAC for exact operation identity. The key is random and
-/// process-local: all bindings become unverifiable after disposal or restart. It is not
-/// a durable approval store and does not authenticate or dispatch an operation.
+/// Versioned, length-framed keyed binding of the exact operation (HMAC-SHA-256).
+///
+/// * The key is supplied by the platform secure store (DPAPI-protected in production) or
+///   generated per-instance when a caller explicitly accepts a volatile key. A volatile
+///   key invalidates every outstanding approval on restart, which fails closed.
+/// * Every material field is length-framed so ("a","bc") and ("ab","c") cannot collide.
+/// * Raw payload bytes are covered by the binding and are never stored, logged, or
+///   displayed. Only the 32-byte binding hash is persisted.
+/// * Strict UTF-8 rejects invalid surrogates instead of silently mapping distinct strings
+///   onto the same replacement character.
 /// </summary>
-public sealed class OperationBinding : IDisposable
+public sealed class OperationBinding : IOperationBinding, IDisposable
 {
-    private static readonly UTF8Encoding StrictUtf8 = new(false, true);
-    private static readonly byte[] Domain = Encoding.ASCII.GetBytes("AERON-OPERATION-BINDING-V2");
+    public const int KeyLength = 32;
+    public const int BindingLength = 32;
+
+    private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+    private static readonly byte[] Domain = Encoding.ASCII.GetBytes("AERON-OPERATION-BINDING-V3");
+
     private readonly Lock _sync = new();
-    private readonly byte[] _key = RandomNumberGenerator.GetBytes(32);
+    private readonly byte[] _key;
     private bool _disposed;
+
+    /// <summary>Creates a binding with a caller-supplied key (for example from the vault).</summary>
+    public OperationBinding(ReadOnlySpan<byte> key)
+    {
+        if (key.Length != KeyLength)
+        {
+            throw new ArgumentException($"A {KeyLength}-byte key is required.", nameof(key));
+        }
+
+        _key = key.ToArray();
+    }
+
+    /// <summary>
+    /// Creates a volatile binding with a random process-local key. Every approval bound
+    /// through it becomes unverifiable on restart, which fails closed. Production
+    /// composition supplies a vault-protected key instead.
+    /// </summary>
+    public OperationBinding()
+        : this(RandomNumberGenerator.GetBytes(KeyLength))
+    {
+    }
+
+    /// <summary>Explicitly-named factory for a volatile binding.</summary>
+    public static OperationBinding CreateVolatile() => new();
 
     public byte[] Compute(
         Guid approvalId,
         SecurityAction action,
-        string requestingSubject,
-        IdentityKind requestingKind,
+        string actorSubject,
+        IdentityKind actorKind,
         string target,
         string policyVersion,
         ReadOnlySpan<byte> exactParameters)
     {
-        if (approvalId == Guid.Empty || !Enum.IsDefined(action) || action == SecurityAction.Unknown)
+        if (approvalId == Guid.Empty ||
+            !Enum.IsDefined(action) || action == SecurityAction.Unknown ||
+            actorKind is not (IdentityKind.Owner or IdentityKind.Agent))
         {
-            throw new ArgumentException("An approval ID and known action are required.");
+            throw new ArgumentException("A valid approval id, action, and actor kind are required.");
         }
 
-        if (requestingKind is not (IdentityKind.Owner or IdentityKind.Agent))
-        {
-            throw new ArgumentException("A verified identity kind is required.", nameof(requestingKind));
-        }
-
-        ArgumentException.ThrowIfNullOrWhiteSpace(requestingSubject);
+        ArgumentException.ThrowIfNullOrWhiteSpace(actorSubject);
         ArgumentException.ThrowIfNullOrWhiteSpace(target);
         ArgumentException.ThrowIfNullOrWhiteSpace(policyVersion);
 
@@ -45,24 +77,31 @@ public sealed class OperationBinding : IDisposable
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             using var hash = IncrementalHash.CreateHMAC(HashAlgorithmName.SHA256, _key);
+
             AppendBytes(hash, Domain);
+
             Span<byte> id = stackalloc byte[16];
             if (!approvalId.TryWriteBytes(id))
             {
-                throw new InvalidOperationException("Unable to encode approval ID.");
+                throw new InvalidOperationException("Unable to encode the approval id.");
             }
 
             AppendBytes(hash, id);
+
             Span<byte> encodedAction = stackalloc byte[sizeof(int)];
             BinaryPrimitives.WriteInt32BigEndian(encodedAction, (int)action);
             AppendBytes(hash, encodedAction);
-            AppendText(hash, requestingSubject);
+
+            AppendText(hash, actorSubject);
+
             Span<byte> encodedKind = stackalloc byte[sizeof(int)];
-            BinaryPrimitives.WriteInt32BigEndian(encodedKind, (int)requestingKind);
+            BinaryPrimitives.WriteInt32BigEndian(encodedKind, (int)actorKind);
             AppendBytes(hash, encodedKind);
+
             AppendText(hash, target);
             AppendText(hash, policyVersion);
             AppendBytes(hash, exactParameters);
+
             return hash.GetHashAndReset();
         }
     }
@@ -71,25 +110,33 @@ public sealed class OperationBinding : IDisposable
         ReadOnlySpan<byte> expectedBinding,
         Guid approvalId,
         SecurityAction action,
-        string requestingSubject,
-        IdentityKind requestingKind,
+        string actorSubject,
+        IdentityKind actorKind,
         string target,
         string policyVersion,
         ReadOnlySpan<byte> exactParameters)
     {
-        if (expectedBinding.Length != 32)
+        if (expectedBinding.Length != BindingLength)
         {
             return false;
         }
 
-        var actual = Compute(approvalId, action, requestingSubject, requestingKind, target, policyVersion, exactParameters);
         try
         {
-            return CryptographicOperations.FixedTimeEquals(expectedBinding, actual);
+            var actual = Compute(approvalId, action, actorSubject, actorKind, target, policyVersion, exactParameters);
+
+            try
+            {
+                return CryptographicOperations.FixedTimeEquals(expectedBinding, actual);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(actual);
+            }
         }
-        finally
+        catch (Exception)
         {
-            CryptographicOperations.ZeroMemory(actual);
+            return false;
         }
     }
 
@@ -97,19 +144,20 @@ public sealed class OperationBinding : IDisposable
     {
         lock (_sync)
         {
-            if (!_disposed)
+            if (_disposed)
             {
-                CryptographicOperations.ZeroMemory(_key);
-                _disposed = true;
+                return;
             }
+
+            CryptographicOperations.ZeroMemory(_key);
+            _disposed = true;
         }
     }
 
     private static void AppendText(IncrementalHash hash, string value)
     {
-        // Strict UTF-8 rejects invalid surrogate sequences instead of mapping distinct
-        // strings to the same replacement character. No normalization is performed.
         var bytes = StrictUtf8.GetBytes(value);
+
         try
         {
             AppendBytes(hash, bytes);
