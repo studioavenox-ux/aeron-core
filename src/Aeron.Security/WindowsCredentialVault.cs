@@ -332,7 +332,7 @@ public sealed class WindowsCredentialVault : IWindowsCredentialVault
         var ciphertext = new byte[plaintext.Length];
         var tag = new byte[TagSize];
 
-        using var aes = new AesGcm(key);
+        using var aes = new AesGcm(key, TagSize);
         aes.Encrypt(nonce, plaintext, ciphertext, tag);
 
         var envelope = new byte[1 + NonceSize + TagSize + ciphertext.Length];
@@ -357,7 +357,7 @@ public sealed class WindowsCredentialVault : IWindowsCredentialVault
 
         try
         {
-            using var aes = new AesGcm(key);
+            using var aes = new AesGcm(key, TagSize);
             aes.Decrypt(nonce, ciphertext, tag, plaintext);
             return plaintext;
         }
@@ -465,7 +465,7 @@ public sealed class InMemoryDataProtector : IDataProtector
             var ciphertext = new byte[plaintext.Length];
             var tag = new byte[VaultEnvelope.TagSize];
 
-            using var aes = new AesGcm(_key);
+            using var aes = new AesGcm(_key, VaultEnvelope.TagSize);
             aes.Encrypt(nonce, plaintext, ciphertext, tag);
 
             protectedBytes = new byte[VaultEnvelope.NonceSize + VaultEnvelope.TagSize + ciphertext.Length];
@@ -493,7 +493,7 @@ public sealed class InMemoryDataProtector : IDataProtector
         {
             var buffer = new byte[protectedBytes.Length - VaultEnvelope.NonceSize - VaultEnvelope.TagSize];
 
-            using var aes = new AesGcm(_key);
+            using var aes = new AesGcm(_key, VaultEnvelope.TagSize);
             aes.Decrypt(
                 protectedBytes[..VaultEnvelope.NonceSize],
                 protectedBytes[(VaultEnvelope.NonceSize + VaultEnvelope.TagSize)..],
