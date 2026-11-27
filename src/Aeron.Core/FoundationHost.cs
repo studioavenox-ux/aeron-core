@@ -84,7 +84,8 @@ public sealed class AeronFoundationHost : IAsyncDisposable
         ICoreEventBus eventBus,
         IAppLifecycle lifecycle,
         IFoundationHealthService healthService,
-        ISecurityPolicy securityPolicy)
+        ISecurityPolicy securityPolicy,
+        SecurityKernelStartupResult securityKernel)
     {
         Paths = paths;
         RedactionFilter = redactionFilter;
@@ -94,6 +95,7 @@ public sealed class AeronFoundationHost : IAsyncDisposable
         Lifecycle = lifecycle;
         HealthService = healthService;
         SecurityPolicy = securityPolicy;
+        SecurityKernel = securityKernel;
     }
 
     public IAppPaths Paths { get; }
@@ -104,10 +106,20 @@ public sealed class AeronFoundationHost : IAsyncDisposable
     public IAppLifecycle Lifecycle { get; }
     public IFoundationHealthService HealthService { get; }
     /// <summary>
-    /// Denies access until a real trusted identity provider and grant store are wired.
-    /// This is not yet an action executor or an approval service.
+    /// Legacy M2 boundary policy from the Phase B foundation. It evaluates requests with
+    /// no trusted identity provider and therefore denies. The production authority path
+    /// is <see cref="SecurityKernel"/>; this property remains for the foundation health
+    /// surface and its existing regression tests.
     /// </summary>
     public ISecurityPolicy SecurityPolicy { get; }
+
+    /// <summary>
+    /// The M2 production security kernel: identity authority, durable audit ledger,
+    /// approval engine, action dispatcher, preemption state, and vault scaffolding.
+    /// Construction is fail-closed; <see cref="SecurityKernelStartupResult.IsOperational"/>
+    /// reports whether the kernel verified at startup.
+    /// </summary>
+    public SecurityKernelStartupResult SecurityKernel { get; }
 
     public static AeronFoundationHost Create(IAppPaths? customPaths = null, IClock? customClock = null)
     {
@@ -139,6 +151,22 @@ public sealed class AeronFoundationHost : IAsyncDisposable
             logger,
             clock);
 
+        // M2 security kernel: wired before the lifecycle starts so no operation can run
+        // against an unverified audit chain. A broken chain yields an unhealthy kernel that
+        // denies everything rather than a fallback path.
+        var securityKernel = SecurityComposition.CreateKernel(paths, clock, redactionFilter);
+
+        logger.LogInfo(
+            nameof(AeronFoundationHost),
+            securityKernel.IsOperational
+                ? "M2 security kernel verified and operational."
+                : "M2 security kernel is not operational; security-dependent operations are denied.",
+            new Dictionary<string, string?>
+            {
+                ["kernelOperational"] = securityKernel.IsOperational ? "true" : "false",
+                ["assetVerified"] = securityKernel.Kernel is not null ? "constructed" : "unavailable"
+            });
+
         return new AeronFoundationHost(
             paths,
             redactionFilter,
@@ -147,9 +175,10 @@ public sealed class AeronFoundationHost : IAsyncDisposable
             eventBus,
             lifecycle,
             healthService,
-            // No production identity or permission provider exists yet. This is an
-            // explicit unavailable state, not a mock or a permissive fallback.
-            new PolicyDecisionEngine(identityProvider: null, grants: null));
+            // Legacy boundary policy: no trusted identity provider is registered here, so
+            // it denies. Production authority flows through SecurityKernel instead.
+            new PolicyDecisionEngine(identityProvider: null, grants: null),
+            securityKernel);
     }
 
     public async ValueTask DisposeAsync()
@@ -160,6 +189,7 @@ public sealed class AeronFoundationHost : IAsyncDisposable
         }
 
         await Lifecycle.DisposeAsync().ConfigureAwait(false);
+        SecurityKernel.Kernel?.Dispose();
         Logger.Flush();
         Logger.Dispose();
     }
