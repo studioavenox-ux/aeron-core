@@ -12,6 +12,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Shared kernel harness: one authoritative copy, compiled into each suite that needs
+         it. A project reference between test projects would duplicate test discovery. -->
+    <Compile Include="..\shared\KernelTestHarness.cs" Link="M2\KernelTestHarness.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio">

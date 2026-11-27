@@ -16,8 +16,13 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Aeron.Contracts\Aeron.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Aeron.Infrastructure\Aeron.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Aeron.Security\Aeron.Security.csproj" />
     <ProjectReference Include="..\..\src\Aeron.Core\Aeron.Core.csproj" />
     <ProjectReference Include="..\..\src\Aeron.Desktop\Aeron.Desktop.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\shared\KernelTestHarness.cs" Link="M2\KernelTestHarness.cs" />
   </ItemGroup>
 
   <ItemGroup>
