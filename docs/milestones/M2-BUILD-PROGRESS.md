@@ -36,8 +36,8 @@ unconnected prototypes. The authoritative description of the code is
 | Independent checkpoint | `PARTIAL` | Same-user file anchor; rollback resistance **not claimed** (D2-07) |
 | Windows vault | `BLOCKED` | AES-256-GCM + DPAPI implemented; storage refused pending D2-05/D2-06 |
 | Desktop surface | `PARTIAL` | Real status, real audit view, honest refusals; Owner controls locked |
-| Tests | `COMPLETE` (authored) | 5 suites retained + 7 new M2 test files; see §Test status |
-| Windows CI | `PENDING` | Requires the push of this branch; results reported by GitHub, not here |
+| Tests | `COMPLETE` (verified on Windows) | 142 executed, 142 passed, 0 failed across 5 suites; see §Verified CI run |
+| Windows CI | `GREEN` | Run `45927284931` @ `d89b52c`: build and all five suites pass |
 
 ## Deliberately unimplemented (not defects)
 
@@ -68,15 +68,38 @@ prototypes. This build:
 5. Preserved M1 behavior: config invariants, redaction, SQLite, lifecycle, tray, single
    instance, and the Phase B boundary policy and its tests are unchanged.
 
+## Verified CI run
+
+The implementation environment has no .NET SDK, no PowerShell, and no NuGet access, so
+every compiled result below comes from GitHub Actions on Windows, not from this
+environment.
+
+Run `45927284931` at commit `d89b52c`, workflow `ci-windows.yml`, SDK `10.0.404`:
+
+| Suite | Result |
+|---|---|
+| `aeron.security.tests` | 96 / 96 |
+| `aeron.infrastructure.tests` | 19 / 19 |
+| `aeron.core.tests` | 8 / 8 |
+| `aeron.desktop.tests` | 12 / 12 |
+| `aeron.architecture.tests` | 7 / 7 |
+| **Total** | **142 passed, 0 failed** |
+
+The `Release` build with warnings-as-errors produced zero warnings, and the M2 gate
+(96 security tests executed, 142 total passed) reported success.
+
 ## Honest statement of what is not verified
 
-- **No build, test run, or Windows publish was executed in this environment.** The sandbox
-  has no .NET SDK, no PowerShell, and no access to `dotnet`/NuGet endpoints. All compiled
-  artifacts, test results, and CI status in this milestone must come from GitHub Actions
-  on the pushed branch. Nothing in this repository claims otherwise.
+- **No build or test run was executed in the implementation environment.** The sandbox
+  has no .NET SDK, no PowerShell, and no access to `dotnet`/NuGet endpoints. Every compiled
+  artifact and test count above was produced by GitHub Actions on the pushed branch.
+- **Windows publish was not exercised.** CI builds and tests; it does not publish a
+  distributable package.
+- **No manual run of the desktop application has occurred.** The desktop surface is
+  covered by view-model tests only; no human or automated UI session has been performed.
 - APEX runtime verification and M2 acceptance are not performed and not claimed.
-- Syntax-level review and static structural checks were performed; they are **not**
-  compilation and must not be described as such.
+- Syntax-level review and static structural checks were performed during authoring; they
+  are **not** compilation and must not be described as such.
 
 ## Remaining work after this build
 
@@ -88,5 +111,6 @@ prototypes. This build:
    provisioning model.
 4. Privacy/memory controls, security notifications, backup/restore, and the M3 `G1`
    gateway remain out of M2 scope.
-5. Windows CI green on the final commit and APEX runtime verification remain acceptance
-   prerequisites that this environment cannot supply.
+5. APEX runtime verification and manual desktop verification remain acceptance
+   prerequisites that this environment cannot supply. Windows CI is green on this
+   commit but must be re-confirmed on whatever commit is finally proposed for acceptance.

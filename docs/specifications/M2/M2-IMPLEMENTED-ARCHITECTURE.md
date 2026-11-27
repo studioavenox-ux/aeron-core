@@ -28,7 +28,7 @@
 | Durable audit ledger | `Aeron.Security` | `DurableAuditLedger.cs` | `COMPLETE` — chain + checkpoint verification |
 | File checkpoint anchor | `Aeron.Security` | `SecurityKernel.cs` | `PARTIAL` — same-user, weak (D2-07) |
 | Action dispatcher | `Aeron.Security` | `ActionDispatcher.cs` | `COMPLETE` — audit-before-effect, epoch guard |
-| Preemption / emergency stop | `Aeron.Security` | `PreemptionState.cs` | `COMPLETE` — latch + epoch |
+| Preemption / emergency stop | `Aeron.Security` | `PreemptionState.cs` | `COMPLETE` — coupled latch + epoch (§4.6) |
 | Permission administration | `Aeron.Security` | `PreemptionState.cs` | `COMPLETE` — Owner-only |
 | Windows credential vault | `Aeron.Security` | `WindowsCredentialVault.cs` | `BLOCKED` on D2-05/D2-06 (implementation complete, storage refused) |
 | DPAPI protector | `Aeron.Infrastructure` | `DpapiDataProtector.cs` | `COMPLETE` — built-in `crypt32.dll` |
@@ -128,7 +128,11 @@ exact operation. No single check is sufficient.
 - Agent authentication consumes the nonce **before** signature verification, so a nonce
   is single-use even for a forgery attempt.
 - A revoked agent's live sessions are revoked immediately and re-registration is refused
-  for the rest of the process.
+  for the rest of the process with `REGISTRATION_REFUSED`.
+- Registration is Owner-provisioned and diagnosable: `TryRegisterAgent` reports
+  `OWNER_REQUIRED`, `INVALID_REQUEST`, `REGISTRATION_REFUSED`, or `AUDIT_UNAVAILABLE`
+  instead of failing silently. If the audit record cannot be written the provisioned
+  agent is removed, so no unaudited agent stays registered.
 - Sessions resolve to exactly one actor; one agent cannot act as another.
 
 ### 4.4 Approval integrity
@@ -153,7 +157,24 @@ exact operation. No single check is sufficient.
   `AttemptRecovery()` — an explicit Owner-visible call — re-anchors a single verified
   record. Everything else stays failed.
 
-### 4.6 Honest limitations
+### 4.6 Emergency stop semantics
+
+An engaged stop suspends agent authentication and every consequential operation, and
+bumps the dispatch epoch so permits issued before it are dead. Two properties are
+deliberate and are pinned by tests:
+
+- **Engaging the stop never refuses on audit failure.** The latch and epoch are set first
+  and the record is appended afterwards. A halt that declined to halt because the audit
+  trail was unavailable would be fail-open.
+- **The Owner is never locked out.** Engaging revokes agent sessions but preserves the
+  live Owner session, and Owner evidence still resolves while the stop is engaged.
+  Clearance requires Owner authority, so blocking it would make the latch permanent and
+  brick the device. Agent authentication stays suspended for the whole duration.
+
+Clearing keeps audit-first ordering: if the clearance record cannot be written the stop
+stays engaged, which is the fail-safe direction.
+
+### 4.7 Honest limitations
 
 - The checkpoint is a same-user file. Rollback resistance is **not** claimed; the status
   surface says so (D2-07).
