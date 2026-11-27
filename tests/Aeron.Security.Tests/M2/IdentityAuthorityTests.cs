@@ -201,6 +201,32 @@ public sealed class IdentityAuthorityTests
         Assert.True(harness.Kernel.IdentityAuthority.AuthenticateAgent(agent.Authenticate()).IsSuccess);
     }
 
+    [Fact]
+    public void SessionEvidenceIsTheRawSessionIdBytesAndOwnerEvidenceIsNotTransferable()
+    {
+        using var harness = new KernelHarness();
+        using var agent = new TestAgent("agent-alpha");
+        harness.RegisterAgent(agent.Registration);
+
+        // The harness encodes evidence as Guid.ToByteArray(); the authority must decode it
+        // back to the same session. A text encoding would silently resolve to another Guid.
+        Assert.Equal(16, harness.OwnerEvidence.Length);
+        Assert.True(
+            harness.Kernel.IdentityAuthority.TryResolveOwnerSession(harness.OwnerEvidence, out var failure),
+            failure);
+
+        // An agent session id presented as Owner evidence is refused: the actor kind is
+        // checked, not just the session's existence.
+        var agentSession = harness.AuthenticateAgent(agent.Authenticate());
+        var agentEvidence = KernelHarness.SessionEvidence(agentSession.SessionId);
+        Assert.False(harness.Kernel.IdentityAuthority.TryResolveOwnerSession(agentEvidence, out _));
+
+        // Wrong lengths and empty evidence are refused outright.
+        Assert.False(harness.Kernel.IdentityAuthority.TryResolveOwnerSession(ReadOnlyMemory<byte>.Empty, out _));
+        Assert.False(harness.Kernel.IdentityAuthority.TryResolveOwnerSession(new byte[15], out _));
+        Assert.False(harness.Kernel.IdentityAuthority.TryResolveOwnerSession(new byte[32], out _));
+    }
+
     private sealed class ToggleableFactorPolicy : IOwnerFactorPolicy
     {
         public bool Approved { get; set; }

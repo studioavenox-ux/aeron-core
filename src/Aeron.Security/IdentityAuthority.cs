@@ -762,10 +762,16 @@ public sealed class IdentityAuthority : IIdentityAuthority
             }
         }
 
-        if (ownerEvidence.Length != 16 || !Guid.TryParseExact(Convert.ToHexString(ownerEvidence.Span), "N", out var sessionId))
+        // Evidence is the raw 16 bytes of the session id. Guid(ReadOnlySpan<byte>) uses the
+        // same mixed-endian layout as Guid.ToByteArray(), so this round-trips exactly. Going
+        // through a hex string would silently reinterpret the byte order and resolve to a
+        // different (never-issued) session.
+        if (ownerEvidence.Length != 16)
         {
             return false;
         }
+
+        var sessionId = new Guid(ownerEvidence.Span);
 
         if (!TryGetActiveSession(sessionId, out var session) || session is null || session.Actor.Kind != IdentityKind.Owner)
         {
