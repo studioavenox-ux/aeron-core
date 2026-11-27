@@ -23,6 +23,9 @@ public sealed class KernelHarness : IDisposable
 {
     public const string OwnerSid = "S-1-5-21-4000-5000-6000-1001";
 
+    /// <summary>The synthetic Owner subject used by the harness and its test factor policy.</summary>
+    public const string OwnerSubject = TestApprovedFactorPolicy.TestOwnerSubject;
+
     private readonly string _root;
 
     public KernelHarness(
@@ -100,7 +103,7 @@ public sealed class KernelHarness : IDisposable
     public void EnrollAndAuthenticateOwner()
     {
         var enrollment = Kernel.IdentityAuthority.EnrollOwner(
-            new OwnerEnrollmentRequest("owner-subject", OwnerSid));
+            new OwnerEnrollmentRequest(OwnerSubject, OwnerSid));
         Assert.Equal("ENROLLED_NO_SESSION", enrollment.ErrorCode);
 
         var session = AuthenticateOwner();
@@ -179,6 +182,13 @@ public sealed class TestApprovedFactorPolicy : IOwnerFactorPolicy
     public const string TestFactorId = "test-factor";
     public const string TestFactorValue = "synthetic-approved-factor";
 
+    /// <summary>
+    /// The subject this policy reports as verified. It must equal the enrolled Owner
+    /// subject; a mismatch is a legitimate authentication failure, so the constant is
+    /// shared rather than duplicated as a literal.
+    /// </summary>
+    public const string TestOwnerSubject = "owner-subject";
+
     public string PolicyId => "test-only";
 
     public bool IsApproved => true;
@@ -198,7 +208,7 @@ public sealed class TestApprovedFactorPolicy : IOwnerFactorPolicy
             if (string.Equals(factor.FactorId, TestFactorId, StringComparison.Ordinal) &&
                 Encoding.UTF8.GetString(factor.Evidence) == TestFactorValue)
             {
-                verifiedSubjectId = "owner";
+                verifiedSubjectId = TestOwnerSubject;
                 return true;
             }
         }

@@ -141,10 +141,24 @@ public sealed class SecuritySurfaceTests
                 new SecurityKernelStartupResult(kernel, "operational", string.Empty),
                 new NullLogger());
 
-            var entry = Assert.Single(viewModel.AuditEntries);
-            Assert.Equal(DurableAuditKind.StartupVerified.ToString(), entry.Kind);
-            Assert.Equal(8, entry.CorrelationDisplay.Length);
-            Assert.DoesNotContain("owner", entry.CorrelationDisplay, StringComparison.OrdinalIgnoreCase);
+            // The kernel records StartupVerified during construction and the test appends a
+            // second record, so the newest entry must be the appended one and the surface
+            // must expose real records rather than a placeholder.
+            Assert.NotEmpty(viewModel.AuditEntries);
+
+            var newest = viewModel.AuditEntries[0];
+            Assert.Equal(DurableAuditKind.StartupVerified.ToString(), newest.Kind);
+            Assert.Equal(SecurityCodes.StartupVerified, newest.DetailCode);
+
+            foreach (var entry in viewModel.AuditEntries)
+            {
+                // A correlation display is an 8-character opaque prefix, never a subject id.
+                Assert.Equal(8, entry.CorrelationDisplay.Length);
+                Assert.DoesNotContain("owner", entry.CorrelationDisplay, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("agent", entry.CorrelationDisplay, StringComparison.OrdinalIgnoreCase);
+                Assert.True(entry.Sequence >= 1);
+                Assert.DoesNotContain(" ", entry.DetailCode, StringComparison.Ordinal);
+            }
         }
         finally
         {

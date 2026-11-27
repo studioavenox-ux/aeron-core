@@ -19,7 +19,7 @@ public sealed class IdentityAuthorityTests
             factorPolicy: new UnapprovedOwnerFactorPolicy(),
             accountSource: harness.Accounts));
 
-        var enroll = unapproved.IdentityAuthority.EnrollOwner(new OwnerEnrollmentRequest("owner-subject", KernelHarness.OwnerSid));
+        var enroll = unapproved.IdentityAuthority.EnrollOwner(new OwnerEnrollmentRequest(KernelHarness.OwnerSubject, KernelHarness.OwnerSid));
         Assert.False(enroll.IsSuccess);
         Assert.Equal("FACTOR_POLICY_NOT_APPROVED", enroll.ErrorCode);
         Assert.False(unapproved.IdentityAuthority.IsOwnerEnrolled);
@@ -33,7 +33,7 @@ public sealed class IdentityAuthorityTests
             accountSource: harness.Accounts));
 
         var approvedEnrollment = kernel.IdentityAuthority.EnrollOwner(
-            new OwnerEnrollmentRequest("owner-subject", KernelHarness.OwnerSid));
+            new OwnerEnrollmentRequest(KernelHarness.OwnerSubject, KernelHarness.OwnerSid));
 
         Assert.True(approvedEnrollment.IsFailure);
         Assert.Equal("ENROLLED_NO_SESSION", approvedEnrollment.ErrorCode);
@@ -212,7 +212,9 @@ public sealed class IdentityAuthorityTests
             IReadOnlyList<OwnerFactorEvidence> factors,
             out string? verifiedSubjectId)
         {
-            verifiedSubjectId = Approved ? "owner" : null;
+            // Must match the enrolled Owner subject, or a correct factor would be
+            // rejected as an identity mismatch rather than tested for the intended reason.
+            verifiedSubjectId = Approved ? KernelHarness.OwnerSubject : null;
             return Approved;
         }
     }
