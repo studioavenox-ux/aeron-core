@@ -1,3 +1,4 @@
+using System.IO;
 using Aeron.Contracts;
 using Aeron.TestSupport;
 using Xunit;
@@ -121,17 +122,28 @@ public sealed class DurableAuditLedgerTests : IDisposable
         Assert.False(truncated.IsHealthy);
         Assert.Equal(DurableAuditLedger.FailureTruncated, truncated.FailureCode);
 
-        // Replace the whole file with a different (self-consistent) chain.
+        // Whole-file replacement with a different, internally valid chain of the SAME length.
+        // Length matters: a shorter forgery is correctly reported as truncation, so an
+        // equal-length chain is what actually exercises head-mismatch detection.
         var forgedCheckpoint = new FileAuditCheckpointStore(Path.Combine(_root, "forged.head"));
         SeedCheckpoint(forgedCheckpoint);
         var forgedPath = Path.Combine(_root, "forged.auditlog");
         var forged = new DurableAuditLedger(forgedPath, forgedCheckpoint, new TestClock());
-        Assert.True(forged.TryAppend(DurableAuditKind.PermissionRevoked, AuditSubject.For(Guid.NewGuid()), SecurityCodes.PermissionRevoked));
+
+        for (var index = 0; index < 3; index++)
+        {
+            Assert.True(forged.TryAppend(DurableAuditKind.PermissionRevoked, AuditSubject.For(Guid.NewGuid()), SecurityCodes.PermissionRevoked));
+        }
+
+        Assert.Equal(full.Length, new FileInfo(forgedPath).Length);
 
         File.WriteAllBytes(path, File.ReadAllBytes(forgedPath));
         var replaced = new DurableAuditLedger(path, checkpoint, new TestClock()).VerifyIntegrity();
         Assert.False(replaced.IsHealthy);
         Assert.Equal(DurableAuditLedger.FailureCheckpointMismatch, replaced.FailureCode);
+
+        // Restore the genuine chain so the rest of the fixture is not polluted.
+        File.WriteAllBytes(path, full);
     }
 
     [Fact]

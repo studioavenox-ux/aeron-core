@@ -62,7 +62,11 @@ public sealed class KernelHarness : IDisposable
 
     public byte[] OwnerMarker { get; }
 
-    public Guid OwnerSessionId { get; private set; }
+    /// <summary>
+    /// The live Owner session the harness presents as evidence. Tests that open a second
+    /// Owner session (clearing an emergency stop, for example) assign the new id here.
+    /// </summary>
+    public Guid OwnerSessionId { get; set; }
 
     public string Root => _root;
 

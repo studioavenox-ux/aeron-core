@@ -68,10 +68,17 @@ public sealed class IdentityAuthorityTests
             factorPolicy: new TestApprovedFactorPolicy(),
             accountSource: new FixedAccountSource("S-1-5-21-9999")));
 
-        // Owner cannot be re-enrolled into a different account after enrollment.
+        // Owner cannot be re-enrolled after enrollment. The request presents the account the
+        // OS actually observes, so the refusal is specifically ALREADY_ENROLLED and not a
+        // generic identity rejection.
         var reenroll = harness.Kernel.IdentityAuthority.EnrollOwner(
-            new OwnerEnrollmentRequest("intruder", "S-1-5-21-9999"));
+            new OwnerEnrollmentRequest("intruder", KernelHarness.OwnerSid));
         Assert.Equal("ALREADY_ENROLLED", reenroll.ErrorCode);
+
+        // A re-enrollment attempt from a different OS account is rejected on identity.
+        var foreignReenroll = harness.Kernel.IdentityAuthority.EnrollOwner(
+            new OwnerEnrollmentRequest("intruder", "S-1-5-21-9999"));
+        Assert.Equal("IDENTITY_REJECTED", foreignReenroll.ErrorCode);
 
         // Correct account, wrong factor: denied.
         var badFactor = harness.Kernel.IdentityAuthority.AuthenticateOwner(new OwnerAuthenticationRequest(
@@ -175,8 +182,11 @@ public sealed class IdentityAuthorityTests
         Assert.False(harness.Kernel.IdentityAuthority.TryResolveActor(session.SessionId, out _));
         Assert.Equal("AGENT_REVOKED", harness.Kernel.IdentityAuthority.AuthenticateAgent(agent.Authenticate()).ErrorCode);
 
-        // Revocation is terminal for the process: re-registration is refused.
-        harness.RegisterAgent(agent.Registration);
+        // Revocation is terminal for the process: re-registration is refused and the agent
+        // stays unusable.
+        var reRegistration = harness.Kernel.IdentityAuthority.TryRegisterAgent(agent.Registration, harness.OwnerEvidence);
+        Assert.False(reRegistration.IsSuccess);
+        Assert.Equal("REGISTRATION_REFUSED", reRegistration.ErrorCode);
         Assert.Equal("AGENT_REVOKED", harness.Kernel.IdentityAuthority.AuthenticateAgent(agent.Authenticate()).ErrorCode);
     }
 
@@ -191,11 +201,18 @@ public sealed class IdentityAuthorityTests
         Assert.True(harness.Kernel.Preemption.TrySetEmergencyStop(harness.OwnerEvidence, "test.stop"));
         Assert.True(harness.Kernel.Preemption.IsEmergencyStopActive);
 
+        // Agents stay locked out for as long as the stop is engaged.
         Assert.Equal("EMERGENCY_STOP_ACTIVE", harness.Kernel.IdentityAuthority.AuthenticateAgent(agent.Authenticate()).ErrorCode);
-        Assert.Equal("EMERGENCY_STOP_ACTIVE", harness.AuthenticateOwnerExpectingFailure());
 
-        // Only the Owner can clear it, and only with a live Owner session.
+        // Clearing requires live Owner authority, never anonymous evidence.
         Assert.False(harness.Kernel.Preemption.TryClearEmergencyStop(ReadOnlyMemory<byte>.Empty, "test.clear"));
+        Assert.True(harness.Kernel.Preemption.IsEmergencyStopActive);
+
+        // The Owner retains ultimate authority: emergency stop must not lock the Owner out
+        // permanently, so an Owner session can still be opened while it is engaged, and that
+        // session can clear it.
+        var recovery = harness.AuthenticateOwner();
+        harness.OwnerSessionId = recovery.SessionId;
         Assert.True(harness.Kernel.Preemption.TryClearEmergencyStop(harness.OwnerEvidence, "test.clear"));
         Assert.False(harness.Kernel.Preemption.IsEmergencyStopActive);
         Assert.True(harness.Kernel.IdentityAuthority.AuthenticateAgent(agent.Authenticate()).IsSuccess);

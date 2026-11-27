@@ -205,15 +205,15 @@ public sealed class IdentityAuthority : IIdentityAuthority
 
         lock (_sync)
         {
-            if (_emergencyStopActive)
-            {
-                return Result<AuthenticatedSession>.Failure("EMERGENCY_STOP_ACTIVE",
-                    "Emergency stop is latched; authentication is suspended until the Owner clears it.");
-            }
-
             ownerSubject = _enrolledOwnerSubject;
             enrolledSid = _enrolledOwnerSid;
         }
+
+        // Emergency stop suspends agent authentication and every consequential operation, but
+        // it deliberately does NOT block Owner authentication. Clearance requires live Owner
+        // authority, so blocking the Owner here would make the latch permanent and would deny
+        // the Owner's ultimate authority to resume. The Owner is still bound by the approved
+        // factor policy; nothing about this path weakens factor verification.
 
         if (ownerSubject is null || enrolledSid is null)
         {
