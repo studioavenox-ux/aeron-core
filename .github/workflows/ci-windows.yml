@@ -106,8 +106,31 @@ jobs:
           Write-Host "::notice title=AERON M1 CI Tests::SDK=$sdkVersion | TotalPassed=$totalPassed | Failed=$totalFailed | Suites($($trxFiles.Count)): $detail"
 
           if ($trxFiles.Count -ne 5 -or $totalFailed -gt 0) {
+            Write-Error "CI gate failed: expected exactly 5 test assemblies, 0 failed tests. Found $($trxFiles.Count) assemblies, $totalFailed failures."
             exit 1
           }
+
+          # Milestone 2 security suites must actually run. A green build with these suites
+          # silently skipped is not M2 evidence, so require a non-trivial executed count and
+          # a minimum in the security assembly.
+          $securitySuite = $suiteSummaries | Where-Object { $_ -like 'Aeron.Security.Tests=*' }
+          if (-not $securitySuite) {
+            Write-Error "CI gate failed: Aeron.Security.Tests did not produce results."
+            exit 1
+          }
+
+          $securityExecuted = [int]($securitySuite -replace '^Aeron\.Security\.Tests=', '' -replace '/.*$', '')
+          if ($securityExecuted -lt 60) {
+            Write-Error "CI gate failed: Aeron.Security.Tests executed only $securityExecuted tests; the M2 security suites are missing or skipped."
+            exit 1
+          }
+
+          if ($totalPassed -lt 110) {
+            Write-Error "CI gate failed: only $totalPassed tests passed across all suites."
+            exit 1
+          }
+
+          Write-Host "::notice title=AERON M2 CI Gate::SecurityTestsExecuted=$securityExecuted | TotalPassed=$totalPassed"
 
       - name: Publish native Windows desktop executable (win-x64)
         run: dotnet publish src/Aeron.Desktop/Aeron.Desktop.csproj -c Release -r win-x64 --self-contained false -warnaserror -o artifacts/publish/win-x64

@@ -1,6 +1,12 @@
 # M2 Acceptance Criteria
 
-> Status: `PROPOSED / NOT IMPLEMENTATION`.
+> Status: `IMPLEMENTED (BUILD) — ACCEPTANCE NOT YET CLAIMED`.
+>
+> Section 1 and sections 2–3 were written before M2 BUILD was authorized and are retained
+> unchanged for provenance. Section 4 (added by the M2 completion build) records the
+> measured state of each acceptance gate against the code that now exists. No gate below is
+> marked passed on the basis of a build or test run performed by an agent in a sandbox
+> without a .NET SDK: those gates stay `PENDING CI` until GitHub Actions reports them.
 
 ## 1. Spec-pack v1.1 acceptance criteria
 
@@ -53,3 +59,47 @@ Owner review and unresolved original byte-integrity/version verification remain 
 - Historical H1–H4 texts were inspected by GPT-6 per Owner; Arena did not inspect or hash the originals. Do not assert Arena byte-level verification or mark source-level acceptance passed.
 - Future tests demonstrate exact binding despite redaction; checkpoint detection of whole-chain replacement/truncation; preemption around execution boundary and honest handling of irreversible external actions; MFA and device trust independently of DPAPI; complete backup scope reconciliation.
 - Owner specification lock, existing authoritative U-8R gate, and separate explicit BUILD authorization are all required; no M2 build now.
+
+## 4. Acceptance gate status — M2 completion build
+
+Vocabulary matches the completion directive: `COMPLETE`, `PARTIAL`, `BLOCKED`,
+`NOT STARTED`.
+
+| # | Acceptance gate | Status | Evidence in the repository |
+|---:|---|---|---|
+| 1 | Authorized security components implemented | `PARTIAL` | Kernel implemented (`M2-IMPLEMENTED-ARCHITECTURE.md` §1); Owner MFA and vault storage blocked by open Owner decisions |
+| 2 | Production composition wired correctly | `COMPLETE` (code) | `SecurityComposition.CreateKernel` called by `AeronFoundationHost.Create` before lifecycle start |
+| 3 | Enforcement integrated with the real action boundary | `COMPLETE` (in-scope actions) | `ActionDispatcher` is the only side-effect gateway; no G1–G4/L2 dispatch exists in M2 |
+| 4 | All required Owner decisions resolved | `BLOCKED` | 10 open entries in `M2-DECISION-REGISTER.md` |
+| 5 | No unresolved critical security gaps | `BLOCKED` | D2-01/04/07/08 are security-critical and open |
+| 6 | Release build zero warnings/errors | `PENDING CI` | Not executed here; no .NET SDK in this environment |
+| 7 | All automated tests pass | `PENDING CI` | Test sources authored; execution unverified here |
+| 8 | Windows CI green on final commit | `PENDING CI` | Requires pushed branch run |
+| 9 | Windows runtime verification | `NOT STARTED` | Requires APEX |
+| 10 | Documentation matches implementation | `COMPLETE` | Implemented architecture, decision register, and this table describe the code that exists |
+
+### Per-area gate detail
+
+| Area | Status | Note |
+|---|---|---|
+| Architecture invariants (acyclic graph, no new packages) | `COMPLETE` | Enforced by `Aeron.Architecture.Tests` |
+| Build/CI | `PENDING CI` | See §1–§3 provenance; not run in sandbox |
+| Default deny | `COMPLETE` | Every mapped action has explicit tests, including unknown/unversioned/secret |
+| Owner authority | `PARTIAL` | Preemption and emergency stop implemented and tested; Owner authentication blocked (D2-01) |
+| Approval | `COMPLETE` | Request, binding, expiry, cancel, deny, mismatch, replay, self-approval prevention, pre-execution revalidation all tested |
+| Parameter binding | `COMPLETE` | Deterministic length-framed HMAC; distinguishable under identical redaction |
+| Audit ledger | `PARTIAL` | Chain, truncation, replacement, crash-tail recovery tested; independent checkpoint blocked (D2-07) |
+| Vault | `BLOCKED` | Implementation complete; storage refused pending D2-05/D2-06 |
+| Redaction | `COMPLETE` | M1 tests retained; audit detail codes structurally cannot carry free text |
+| Backup | `NOT STARTED` | Out of M2 build scope; blocked on D2-06 |
+| Crash handling | `PARTIAL` | Audit crash window covered; approval-store crash window covered by atomic writes; execution crash injection not implemented |
+| M2 freeze | `NOT STARTED` | Requires Owner acceptance and CI evidence |
+
+### Evidence still required for final acceptance
+
+1. GitHub Actions Windows CI run on the final commit SHA: build, five retained suites plus
+   the new M2 suites, hygiene scan, `win-x64` publish, executable verification.
+2. APEX interactive verification of the desktop security surface on Windows 11 25H2.
+3. Owner resolutions for D2-01 … D2-10, or an explicit Owner acceptance of the documented
+   fail-closed posture for each.
+4. Owner acceptance statement and, if required, signed artifact provenance.
