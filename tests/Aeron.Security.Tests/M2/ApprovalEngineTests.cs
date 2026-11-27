@@ -112,7 +112,7 @@ public sealed class ApprovalEngineTests
             .Value;
 
         // No marker, wrong marker, and the agent's own session id are all refused.
-        Assert.Equal(ApprovalOutcomeCode.OwnerRequired, harness.Kernel.Approvals.Decide(approvalId, [], true).Code);
+        Assert.Equal(ApprovalOutcomeCode.OwnerRequired, harness.Kernel.Approvals.Decide(approvalId, ReadOnlyMemory<byte>.Empty, true).Code);
         Assert.Equal(ApprovalOutcomeCode.OwnerRequired,
             harness.Kernel.Approvals.Decide(approvalId, RandomNumberGenerator.GetBytes(48), true).Code);
         Assert.Equal(ApprovalOutcomeCode.OwnerRequired,

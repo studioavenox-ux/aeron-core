@@ -1,3 +1,4 @@
+using System.IO;
 using Aeron.Contracts;
 using Aeron.Core;
 using Aeron.Desktop.Tray;
