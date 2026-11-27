@@ -61,24 +61,37 @@ public sealed class PreemptionState : IPreemptionState
             return false;
         }
 
+        bool alreadyEngaged;
+
         lock (_sync)
         {
-            if (_emergencyStop)
-            {
-                return false;
-            }
+            alreadyEngaged = _emergencyStop;
         }
 
-        if (!_audit.TryAppend(DurableAuditKind.EmergencyStop, AuditSubject.For(Guid.NewGuid()), SecurityCodes.EmergencyStop))
+        if (alreadyEngaged)
         {
             return false;
         }
 
+        // Engage first, audit second. A stop that refuses to engage because the audit trail
+        // is unavailable would be fail-open, so the latch and the dispatch epoch are set
+        // before the record is attempted; the audit append is still required for the normal
+        // path and its outcome is reported, but it cannot prevent the halt.
         lock (_sync)
         {
             _emergencyStop = true;
             _epoch++;
         }
+
+        // The identity authority owns the authentication latch. Without this the stop would
+        // only block dispatch, and agents could keep opening new sessions while the Owner
+        // believes the device is halted: a fail-open. The latch is idempotent.
+        _ = _identityAuthority.SetEmergencyStopActive(true);
+
+        _ = _audit.TryAppend(
+            DurableAuditKind.EmergencyStop,
+            AuditSubject.For(Guid.NewGuid()),
+            SecurityCodes.EmergencyStop);
 
         _ = reasonCode;
         return true;
@@ -110,6 +123,11 @@ public sealed class PreemptionState : IPreemptionState
             _emergencyStop = false;
             _epoch++;
         }
+
+        // Releasing the authentication latch is part of clearing the stop. Clearing is the
+        // fail-safe direction, so an audit failure above already refused it; here the latch
+        // is released unconditionally and bounded.
+        _ = _identityAuthority.SetEmergencyStopActive(false);
 
         _ = reasonCode;
         return true;

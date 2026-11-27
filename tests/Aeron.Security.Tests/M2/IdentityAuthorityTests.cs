@@ -208,11 +208,8 @@ public sealed class IdentityAuthorityTests
         Assert.False(harness.Kernel.Preemption.TryClearEmergencyStop(ReadOnlyMemory<byte>.Empty, "test.clear"));
         Assert.True(harness.Kernel.Preemption.IsEmergencyStopActive);
 
-        // The Owner retains ultimate authority: emergency stop must not lock the Owner out
-        // permanently, so an Owner session can still be opened while it is engaged, and that
-        // session can clear it.
-        var recovery = harness.AuthenticateOwner();
-        harness.OwnerSessionId = recovery.SessionId;
+        // The Owner retains ultimate authority: engaging the stop revokes agent sessions but
+        // preserves the Owner's, so the same Owner session that engaged it can clear it.
         Assert.True(harness.Kernel.Preemption.TryClearEmergencyStop(harness.OwnerEvidence, "test.clear"));
         Assert.False(harness.Kernel.Preemption.IsEmergencyStopActive);
         Assert.True(harness.Kernel.IdentityAuthority.AuthenticateAgent(agent.Authenticate()).IsSuccess);

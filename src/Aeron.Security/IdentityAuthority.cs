@@ -592,19 +592,49 @@ public sealed class IdentityAuthority : IIdentityAuthority
             return false;
         }
 
-        lock (_sync)
-        {
-            _emergencyStopActive = active;
-
-            if (active)
-            {
-                _preemptionEpoch++;
-                RevokeAgentSessionsLocked(string.Empty, revokeAll: true);
-            }
-        }
+        // Route through the shared latch so the authority never holds a stop state that the
+        // preemption state does not, and so sessions are revoked consistently.
+        _ = ApplyEmergencyLatch(active, revokeSessions: true);
 
         _ = reasonCode;
         return true;
+    }
+
+    /// <summary>
+    /// Couples the authentication latch to the preemption state. The caller (PreemptionState)
+    /// has already resolved Owner authority and written the audit record for the transition,
+    /// so this only flips the latch and revokes agent sessions; it must not re-audit or
+    /// re-resolve evidence. Engages are idempotent, so a repeated stop cannot fail here.
+    /// </summary>
+    internal bool SetEmergencyStopActive(bool active) => ApplyEmergencyLatch(active, revokeSessions: true);
+
+    private bool ApplyEmergencyLatch(bool active, bool revokeSessions)
+    {
+        lock (_sync)
+        {
+            if (active)
+            {
+                if (_emergencyStopActive)
+                {
+                    return true;
+                }
+
+                _emergencyStopActive = true;
+                _preemptionEpoch++;
+
+                if (revokeSessions)
+                {
+                    // Revoke agent sessions only. The Owner's live session must survive the
+                    // stop, because Owner authority is the only thing that can clear it.
+                    RevokeAgentSessionsLocked(string.Empty, revokeAll: true);
+                }
+
+                return true;
+            }
+
+            _emergencyStopActive = false;
+            return true;
+        }
     }
 
     bool IIdentityAuthority.TryPreempt(ReadOnlyMemory<byte> ownerEvidence) => TryPreempt(ownerEvidence);
@@ -749,12 +779,9 @@ public sealed class IdentityAuthority : IIdentityAuthority
 
         lock (_sync)
         {
-            if (_emergencyStopActive)
-            {
-                failure = "Emergency stop is latched; clear it with the enrolled Owner first.";
-                return false;
-            }
-
+            // Deliberately NOT blocked by an active emergency stop. Engaging a stop revokes
+            // every session, so if Owner evidence could not resolve here the latch could never
+            // be cleared: the device would be bricked. Owner authority is what ends a stop.
             if (_enrolledOwnerSubject is null)
             {
                 failure = "No Owner is enrolled.";
