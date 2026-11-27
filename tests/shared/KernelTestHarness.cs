@@ -96,7 +96,11 @@ public sealed class KernelHarness : IDisposable
         };
     }
 
-    public static byte[] SessionEvidence(Guid sessionId) => Encoding.ASCII.GetBytes(sessionId.ToString("N"));
+    /// <summary>
+    /// Session evidence is the raw 16 bytes of the session id: the authority reparses it
+    /// into a Guid and rejects any other length, so encoding it as text would never work.
+    /// </summary>
+    public static byte[] SessionEvidence(Guid sessionId) => sessionId.ToByteArray();
 
     public byte[] OwnerEvidence => SessionEvidence(OwnerSessionId);
 

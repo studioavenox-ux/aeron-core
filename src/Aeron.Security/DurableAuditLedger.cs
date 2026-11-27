@@ -135,6 +135,20 @@ public sealed class DurableAuditLedger : IDurableAuditLedger
 
         lock (_sync)
         {
+            // Verify on first use. Appending to a chain that was never checked would let an
+            // unverified or tampered file be extended, so the first append performs the same
+            // verification a startup does, and a latch still blocks every append.
+            if (!_verified && _latchCode is null)
+            {
+                var verification = VerifyCore(allowOwnerRecovery: false);
+                _diagnostic = verification.Diagnostic;
+
+                if (!verification.IsHealthy)
+                {
+                    return false;
+                }
+            }
+
             if (!_verified || _latchCode is not null)
             {
                 return false;
