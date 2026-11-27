@@ -21,6 +21,7 @@ public partial class App : Application
     private AeronFoundationHost? _host;
     private Win32SystemTrayService? _trayService;
     private MainWindowViewModel? _mainViewModel;
+    private SecurityViewModel? _securityViewModel;
     private MainWindow? _mainWindow;
     private int _teardownStarted;
 
@@ -62,13 +63,21 @@ public partial class App : Application
             _trayService = new Win32SystemTrayService(_host.Logger);
             _ = _trayService.Initialize("AERON — Foundation Running");
 
+            var securityViewModel = new SecurityViewModel(
+                _host.SecurityKernel,
+                _host.Logger,
+                DispatchToUi,
+                static reason => { /* emergency stop is handled by kernel services only */ });
+            _securityViewModel = securityViewModel;
+
             _mainViewModel = new MainWindowViewModel(
                 _host.Lifecycle,
                 _host.HealthService,
                 _host.EventBus,
                 _trayService,
                 _host.Logger,
-                DispatchToUi);
+                DispatchToUi,
+                securityViewModel);
             _mainViewModel.ShutdownApplicationRequested += OnShutdownApplicationRequested;
 
             _mainWindow = new MainWindow(_mainViewModel);
@@ -172,6 +181,9 @@ public partial class App : Application
             _mainViewModel.Dispose();
             _mainViewModel = null;
         }
+
+        _securityViewModel?.Dispose();
+        _securityViewModel = null;
 
         _trayService?.Dispose();
         _trayService = null;

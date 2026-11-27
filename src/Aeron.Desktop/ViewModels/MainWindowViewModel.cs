@@ -62,7 +62,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IDisposable
         ICoreEventBus eventBus,
         ISystemTrayService trayService,
         IAeronLogger logger,
-        Action<Action>? uiDispatcher = null)
+        Action<Action>? uiDispatcher = null,
+        SecurityViewModel? security = null)
     {
         ArgumentNullException.ThrowIfNull(lifecycle);
         ArgumentNullException.ThrowIfNull(healthService);
@@ -76,6 +77,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IDisposable
         _trayService = trayService;
         _logger = logger;
         _uiDispatcher = uiDispatcher ?? (static action => action());
+        Security = security;
 
         _instanceId = lifecycle.InstanceId;
         _lifecycleStateText = lifecycle.CurrentState.ToString();
@@ -99,6 +101,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IDisposable
     public event EventHandler? HideToTrayRequested;
     public event EventHandler? RestoreWindowRequested;
     public event EventHandler? ShutdownApplicationRequested;
+
+    /// <summary>
+    /// M2 Owner security surface. Null only in foundation-only test constructions; the
+    /// production shell always supplies one so security status is never hidden.
+    /// </summary>
+    public SecurityViewModel? Security { get; }
 
     public AsyncRelayCommand RefreshCommand { get; }
     public RelayCommand MinimizeToTrayCommand { get; }
@@ -264,7 +272,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IDisposable
     public async Task RefreshHealthAsync(CancellationToken cancellationToken = default)
     {
         var snapshot = await _healthService.CaptureSnapshotAsync(cancellationToken).ConfigureAwait(false);
-        _uiDispatcher(() => ApplySnapshot(snapshot));
+        _uiDispatcher(() =>
+        {
+            ApplySnapshot(snapshot);
+            Security?.Refresh();
+        });
     }
 
     public async Task<Result> SetCloseToTrayAsync(bool enabled, CancellationToken cancellationToken = default)
