@@ -1,7 +1,7 @@
 <Window x:Class="Aeron.Desktop.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="AERON — Foundation"
+        Title="AERON — Security Kernel"
         Width="920"
         Height="620"
         MinWidth="760"
@@ -52,7 +52,7 @@
                                    FontSize="11"
                                    FontWeight="SemiBold" />
                     </Border>
-                    <TextBlock Text="Milestone 1 — Native Foundation"
+                    <TextBlock Text="Milestone 2 — Production Security Kernel"
                                Foreground="{StaticResource AeronTextSecondaryBrush}"
                                FontFamily="Segoe UI"
                                FontSize="12.5"
@@ -130,87 +130,236 @@
             </Grid>
         </Border>
 
-        <!-- Verified Foundation Subsystem Cards -->
-        <ScrollViewer Grid.Row="2"
-                      VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled"
-                      Padding="24,18,24,18">
-            <UniformGrid Columns="2" Rows="2">
+        <!-- Main content: Foundation and Security tabs hosted in one shell -->
+        <TabControl Grid.Row="2"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Margin="16,6,16,0">
+            <TabItem Header="Foundation">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              Padding="8,12,8,12">
+                    <UniformGrid Columns="2" Rows="2">
 
-                <!-- Card 1: Lifecycle & Shell -->
-                <Border Style="{StaticResource AeronCardBorderStyle}" Margin="0,0,9,9">
-                    <StackPanel>
-                        <TextBlock Text="LIFECYCLE &amp; DESKTOP SHELL" Style="{StaticResource AeronCardHeadingStyle}" />
+                        <!-- Card 1: Lifecycle & Shell -->
+                        <Border Style="{StaticResource AeronCardBorderStyle}" Margin="0,0,9,9">
+                            <StackPanel>
+                                <TextBlock Text="LIFECYCLE &amp; DESKTOP SHELL" Style="{StaticResource AeronCardHeadingStyle}" />
 
-                        <TextBlock Text="Build &amp; Runtime" Style="{StaticResource AeronLabelStyle}" />
-                        <TextBlock Margin="0,2,0,10" Style="{StaticResource AeronValueStyle}">
-                            <Run Text="{Binding ApplicationVersion, Mode=OneWay}" />
-                            <Run Text=" · " />
-                            <Run Text="{Binding RuntimeDescription, Mode=OneWay}" />
-                        </TextBlock>
+                                <TextBlock Text="Build &amp; Runtime" Style="{StaticResource AeronLabelStyle}" />
+                                <TextBlock Margin="0,2,0,10" Style="{StaticResource AeronValueStyle}">
+                                    <Run Text="{Binding ApplicationVersion, Mode=OneWay}" />
+                                    <Run Text=" · " />
+                                    <Run Text="{Binding RuntimeDescription, Mode=OneWay}" />
+                                </TextBlock>
 
-                        <TextBlock Text="Instance &amp; Started (UTC)" Style="{StaticResource AeronLabelStyle}" />
-                        <TextBlock Margin="0,2,0,12" Style="{StaticResource AeronValueStyle}">
-                            <Run Text="{Binding InstanceId, Mode=OneWay}" />
-                            <Run Text=" · " />
-                            <Run Text="{Binding StartedAtDisplay, Mode=OneWay}" />
-                        </TextBlock>
+                                <TextBlock Text="Instance &amp; Started (UTC)" Style="{StaticResource AeronLabelStyle}" />
+                                <TextBlock Margin="0,2,0,12" Style="{StaticResource AeronValueStyle}">
+                                    <Run Text="{Binding InstanceId, Mode=OneWay}" />
+                                    <Run Text=" · " />
+                                    <Run Text="{Binding StartedAtDisplay, Mode=OneWay}" />
+                                </TextBlock>
 
-                        <CheckBox Content="Closing window (X) minimizes AERON to system tray"
-                                  IsChecked="{Binding CloseToTray, Mode=TwoWay}"
-                                  Style="{StaticResource AeronCheckBoxStyle}" />
-                    </StackPanel>
-                </Border>
+                                <CheckBox Content="Closing window (X) minimizes AERON to system tray"
+                                          IsChecked="{Binding CloseToTray, Mode=TwoWay}"
+                                          Style="{StaticResource AeronCheckBoxStyle}" />
+                            </StackPanel>
+                        </Border>
 
-                <!-- Card 2: SQLite Persistence -->
-                <Border Style="{StaticResource AeronCardBorderStyle}" Margin="9,0,0,9">
-                    <StackPanel>
-                        <TextBlock Text="LOCAL SQLITE PERSISTENCE" Style="{StaticResource AeronCardHeadingStyle}" />
+                        <!-- Card 2: SQLite Persistence -->
+                        <Border Style="{StaticResource AeronCardBorderStyle}" Margin="9,0,0,9">
+                            <StackPanel>
+                                <TextBlock Text="LOCAL SQLITE PERSISTENCE" Style="{StaticResource AeronCardHeadingStyle}" />
 
-                        <TextBlock Text="Health Status" Style="{StaticResource AeronLabelStyle}" />
-                        <TextBlock Text="{Binding DatabaseStatusText}" Margin="0,2,0,10" Style="{StaticResource AeronValueStyle}" />
+                                <TextBlock Text="Health Status" Style="{StaticResource AeronLabelStyle}" />
+                                <TextBlock Text="{Binding DatabaseStatusText}" Margin="0,2,0,10" Style="{StaticResource AeronValueStyle}" />
 
-                        <TextBlock Text="Concurrency &amp; Integrity" Style="{StaticResource AeronLabelStyle}" />
-                        <TextBlock Text="{Binding DatabaseModeText}" Margin="0,2,0,10" Style="{StaticResource AeronValueStyle}" />
+                                <TextBlock Text="Concurrency &amp; Integrity" Style="{StaticResource AeronLabelStyle}" />
+                                <TextBlock Text="{Binding DatabaseModeText}" Margin="0,2,0,10" Style="{StaticResource AeronValueStyle}" />
 
-                        <TextBlock Text="Migrations" Style="{StaticResource AeronLabelStyle}" />
-                        <TextBlock Text="{Binding SchemaVersionText}" Margin="0,2,0,0" Style="{StaticResource AeronValueStyle}" />
-                    </StackPanel>
-                </Border>
+                                <TextBlock Text="Migrations" Style="{StaticResource AeronLabelStyle}" />
+                                <TextBlock Text="{Binding SchemaVersionText}" Margin="0,2,0,0" Style="{StaticResource AeronValueStyle}" />
+                            </StackPanel>
+                        </Border>
 
-                <!-- Card 3: Security & Policy Invariants -->
-                <Border Style="{StaticResource AeronCardBorderStyle}" Margin="0,9,9,0">
-                    <StackPanel>
-                        <TextBlock Text="SECURITY &amp; POLICY INVARIANTS" Style="{StaticResource AeronCardHeadingStyle}" />
+                        <!-- Card 3: Security & Policy Invariants -->
+                        <Border Style="{StaticResource AeronCardBorderStyle}" Margin="0,9,9,0">
+                            <StackPanel>
+                                <TextBlock Text="SECURITY &amp; POLICY INVARIANTS" Style="{StaticResource AeronCardHeadingStyle}" />
 
-                        <TextBlock Text="Standing Guardrails" Style="{StaticResource AeronLabelStyle}" />
-                        <TextBlock Text="{Binding SecurityPolicyText}" Margin="0,2,0,10" Style="{StaticResource AeronValueStyle}" />
+                                <TextBlock Text="Standing Guardrails" Style="{StaticResource AeronLabelStyle}" />
+                                <TextBlock Text="{Binding SecurityPolicyText}" Margin="0,2,0,10" Style="{StaticResource AeronValueStyle}" />
 
-                        <TextBlock Text="Structured Diagnostic Logger" Style="{StaticResource AeronLabelStyle}" />
-                        <TextBlock Text="{Binding LoggerStatusText}" Margin="0,2,0,0" Style="{StaticResource AeronValueStyle}" />
-                    </StackPanel>
-                </Border>
+                                <TextBlock Text="Structured Diagnostic Logger" Style="{StaticResource AeronLabelStyle}" />
+                                <TextBlock Text="{Binding LoggerStatusText}" Margin="0,2,0,0" Style="{StaticResource AeronValueStyle}" />
+                            </StackPanel>
+                        </Border>
 
-                <!-- Card 4: Configuration & Storage Isolation -->
-                <Border Style="{StaticResource AeronCardBorderStyle}" Margin="9,9,0,0">
-                    <StackPanel>
-                        <TextBlock Text="ISOLATED CONFIGURATION &amp; STORAGE" Style="{StaticResource AeronCardHeadingStyle}" />
+                        <!-- Card 4: Configuration & Storage Isolation -->
+                        <Border Style="{StaticResource AeronCardBorderStyle}" Margin="9,9,0,0">
+                            <StackPanel>
+                                <TextBlock Text="ISOLATED CONFIGURATION &amp; STORAGE" Style="{StaticResource AeronCardHeadingStyle}" />
 
-                        <TextBlock Text="Configuration Policy" Style="{StaticResource AeronLabelStyle}" />
-                        <TextBlock Text="{Binding ConfigStatusText}" Margin="0,2,0,10" Style="{StaticResource AeronValueStyle}" />
+                                <TextBlock Text="Configuration Policy" Style="{StaticResource AeronLabelStyle}" />
+                                <TextBlock Text="{Binding ConfigStatusText}" Margin="0,2,0,10" Style="{StaticResource AeronValueStyle}" />
 
-                        <TextBlock Text="User-Scoped Storage Root" Style="{StaticResource AeronLabelStyle}" />
-                        <TextBlock Text="{Binding AppDataRootPath}"
-                                   Margin="0,2,0,0"
-                                   FontFamily="Consolas"
-                                   FontSize="11.5"
-                                   Foreground="{StaticResource AeronTextPrimaryBrush}"
-                                   TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
+                                <TextBlock Text="User-Scoped Storage Root" Style="{StaticResource AeronLabelStyle}" />
+                                <TextBlock Text="{Binding AppDataRootPath}"
+                                           Margin="0,2,0,0"
+                                           FontFamily="Consolas"
+                                           FontSize="11.5"
+                                           Foreground="{StaticResource AeronTextPrimaryBrush}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
 
-            </UniformGrid>
-        </ScrollViewer>
+                    </UniformGrid>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Security">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              Padding="8,12,8,12"
+                              DataContext="{Binding Security}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <UniformGrid Grid.Row="0" Columns="2" Rows="2">
+
+                            <!-- Owner authentication boundary -->
+                            <Border Style="{StaticResource AeronCardBorderStyle}" Margin="0,0,9,9">
+                                <StackPanel>
+                                    <TextBlock Text="OWNER AUTHENTICATION BOUNDARY" Style="{StaticResource AeronCardHeadingStyle}" />
+
+                                    <TextBlock Text="Owner Status" Style="{StaticResource AeronLabelStyle}" />
+                                    <TextBlock Text="{Binding OwnerStatusText}" Margin="0,2,0,8" Style="{StaticResource AeronValueStyle}" />
+
+                                    <TextBlock Text="{Binding OwnerStatusDetail}"
+                                               Foreground="{StaticResource AeronWarningBrush}"
+                                               FontFamily="Segoe UI"
+                                               FontSize="12"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Durable audit -->
+                            <Border Style="{StaticResource AeronCardBorderStyle}" Margin="9,0,0,9">
+                                <StackPanel>
+                                    <TextBlock Text="DURABLE AUDIT LEDGER" Style="{StaticResource AeronCardHeadingStyle}" />
+
+                                    <TextBlock Text="Chain Integrity" Style="{StaticResource AeronLabelStyle}" />
+                                    <TextBlock Text="{Binding AuditStatusText}" Margin="0,2,0,8" Style="{StaticResource AeronValueStyle}" />
+
+                                    <TextBlock Text="{Binding AuditDetailText}"
+                                               Foreground="{StaticResource AeronTextSecondaryBrush}"
+                                               FontFamily="Segoe UI"
+                                               FontSize="11.5"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Authority and policy -->
+                            <Border Style="{StaticResource AeronCardBorderStyle}" Margin="0,9,9,0">
+                                <StackPanel>
+                                    <TextBlock Text="AUTHORITY, APPROVALS &amp; SESSIONS" Style="{StaticResource AeronCardHeadingStyle}" />
+
+                                    <TextBlock Text="Policy" Style="{StaticResource AeronLabelStyle}" />
+                                    <TextBlock Text="{Binding PolicyVersionText}" Margin="0,2,0,8" Style="{StaticResource AeronValueStyle}" />
+
+                                    <TextBlock Text="Approval Engine" Style="{StaticResource AeronLabelStyle}" />
+                                    <TextBlock Text="{Binding ApprovalStatusText}" Margin="0,2,0,8" Style="{StaticResource AeronValueStyle}" />
+
+                                    <TextBlock Text="Sessions &amp; Agents" Style="{StaticResource AeronLabelStyle}" />
+                                    <TextBlock Margin="0,2,0,0" Style="{StaticResource AeronValueStyle}">
+                                        <Run Text="{Binding SessionSummary, Mode=OneWay}" />
+                                        <Run Text=" · " />
+                                        <Run Text="{Binding AgentSummary, Mode=OneWay}" />
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Vault and emergency stop -->
+                            <Border Style="{StaticResource AeronCardBorderStyle}" Margin="9,9,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="WINDOWS VAULT &amp; EMERGENCY STOP" Style="{StaticResource AeronCardHeadingStyle}" />
+
+                                    <TextBlock Text="Credential Vault" Style="{StaticResource AeronLabelStyle}" />
+                                    <TextBlock Text="{Binding VaultStatusText}"
+                                               Margin="0,2,0,8"
+                                               Foreground="{StaticResource AeronTextPrimaryBrush}"
+                                               FontFamily="Segoe UI"
+                                               FontSize="12"
+                                               TextWrapping="Wrap" />
+
+                                    <TextBlock Text="Emergency Stop" Style="{StaticResource AeronLabelStyle}" />
+                                    <TextBlock Text="{Binding EmergencyStopText}" Margin="0,2,0,8" Style="{StaticResource AeronValueStyle}" />
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Content="Emergency _Stop"
+                                                Command="{Binding RequestEmergencyStopCommand}"
+                                                Style="{StaticResource AeronExitButtonStyle}"
+                                                Margin="0,0,8,0" />
+                                        <Button Content="Refresh _Security"
+                                                Command="{Binding RefreshCommand}"
+                                                Style="{StaticResource AeronSecondaryButtonStyle}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
+
+                        <!-- Audit visibility -->
+                        <Border Grid.Row="1" Style="{StaticResource AeronCardBorderStyle}" Margin="0,18,0,9">
+                            <StackPanel>
+                                <TextBlock Text="REDACTED AUDIT VISIBILITY (READ-ONLY)" Style="{StaticResource AeronCardHeadingStyle}" />
+
+                                <TextBlock Text="{Binding ActionStatusText}"
+                                           Foreground="{StaticResource AeronTextSecondaryBrush}"
+                                           FontFamily="Segoe UI"
+                                           FontSize="11.5"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,8" />
+
+                                <ListView ItemsSource="{Binding AuditEntries}"
+                                          MaxHeight="220"
+                                          Background="Transparent"
+                                          BorderThickness="0"
+                                          Foreground="{StaticResource AeronTextPrimaryBrush}"
+                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn Header="Seq" Width="70"
+                                                            DisplayMemberBinding="{Binding Sequence}" />
+                                            <GridViewColumn Header="Recorded (UTC)" Width="185"
+                                                            DisplayMemberBinding="{Binding RecordedAtUtc}" />
+                                            <GridViewColumn Header="Kind" Width="190"
+                                                            DisplayMemberBinding="{Binding Kind}" />
+                                            <GridViewColumn Header="Detail" Width="150"
+                                                            DisplayMemberBinding="{Binding DetailCode}" />
+                                            <GridViewColumn Header="Correlation" Width="110"
+                                                            DisplayMemberBinding="{Binding CorrelationDisplay}" />
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+
+                                <TextBlock Text="Only fixed audit kinds, machine detail codes, and opaque correlation prefixes are stored and displayed. Free text, identity evidence, payloads, and credentials can never enter the ledger."
+                                           Foreground="{StaticResource AeronTextMutedBrush}"
+                                           FontFamily="Segoe UI"
+                                           FontSize="11"
+                                           TextWrapping="Wrap"
+                                           Margin="0,8,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Row="2" Height="8" Background="Transparent" />
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
 
         <!-- Footer Status Bar -->
         <Border Grid.Row="3"

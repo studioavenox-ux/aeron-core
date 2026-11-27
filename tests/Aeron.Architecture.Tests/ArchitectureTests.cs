@@ -126,7 +126,7 @@ public sealed class ArchitectureAndGovernanceTests
         Assert.Empty(GetPackageReferences("src/Aeron.Contracts/Aeron.Contracts.csproj"));
 
         AssertProjectReferences("src/Aeron.Security/Aeron.Security.csproj", ["Aeron.Contracts"]);
-        Assert.Empty(GetPackageReferences("src/Aeron.Security/Aeron.Security.csproj"));
+        Xunit.Assert.Empty(GetPackageReferences("src/Aeron.Security/Aeron.Security.csproj"));
 
         AssertProjectReferences(
             "src/Aeron.Infrastructure/Aeron.Infrastructure.csproj",
@@ -136,9 +136,12 @@ public sealed class ArchitectureAndGovernanceTests
             "src/Aeron.Core/Aeron.Core.csproj",
             ["Aeron.Contracts", "Aeron.Infrastructure", "Aeron.Security"]);
 
+        // M2 moved the Owner security surface into the shell, so the WPF host references
+        // the kernel assembly directly. The graph stays acyclic:
+        // Desktop -> Core -> {Security, Infrastructure} and Desktop -> Security.
         AssertProjectReferences(
             "src/Aeron.Desktop/Aeron.Desktop.csproj",
-            ["Aeron.Contracts", "Aeron.Core"]);
+            ["Aeron.Contracts", "Aeron.Core", "Aeron.Security"]);
 
         // Headless modules must have zero WPF coupling.
         string[] headlessProjects =
@@ -207,6 +210,76 @@ public sealed class ArchitectureAndGovernanceTests
         {
             var ext = Path.GetExtension(file);
             Assert.DoesNotContain(ext, ForbiddenModelWeightExtensions, StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public void SecurityKernel_KeepsAcyclicDependenciesAndNoForbiddenRuntimeDependencies()
+    {
+        // The M2 kernel added no project references and no packages: Contracts has none,
+        // Security references Contracts only, Infrastructure references Contracts+Security.
+        AssertProjectReferences("src/Aeron.Security/Aeron.Security.csproj", ["Aeron.Contracts"]);
+        Xunit.Assert.Empty(GetPackageReferences("src/Aeron.Security/Aeron.Security.csproj"));
+
+        // No platform-specific Windows API package was introduced: DPAPI and the account
+        // source use built-in runtime interop types only.
+        var packageFiles = Directory.GetFiles(Path.Combine(RepoRoot, "src"), "*.csproj", SearchOption.AllDirectories)
+            .Where(static p => !IsBuildOutputPath(p))
+            .ToArray();
+
+        foreach (var file in packageFiles)
+        {
+            foreach (var package in GetPackageReferences(Path.GetRelativePath(RepoRoot, file).Replace('\\', '/')))
+            {
+                Assert.DoesNotContain("Windows.Security", package, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("CredentialManagement", package, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("IdentityModel", package, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("Cryptography", package, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        // Headless security code must not gain WPF, WinForms, or network server coupling.
+        var securityFiles = Directory.GetFiles(Path.Combine(RepoRoot, "src", "Aeron.Security"), "*.cs", SearchOption.AllDirectories)
+            .Where(static p => !IsBuildOutputPath(p));
+
+        foreach (var file in securityFiles)
+        {
+            var text = File.ReadAllText(file);
+            Assert.DoesNotContain("System.Windows", text, StringComparison.Ordinal);
+            Assert.DoesNotContain("HttpListener", text, StringComparison.Ordinal);
+            Assert.DoesNotContain("TcpListener", text, StringComparison.Ordinal);
+            Assert.DoesNotContain("HttpClient", text, StringComparison.Ordinal);
+
+            // AERON.Security stays platform-neutral: Windows interop (DPAPI, account
+            // observation, ACLs) belongs to Aeron.Infrastructure, which composes it.
+            Assert.DoesNotContain("DllImport", text, StringComparison.Ordinal);
+            Assert.DoesNotContain("LibraryImport", text, StringComparison.Ordinal);
+            Assert.DoesNotContain("RegisterWindowsAccount", text, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void Milestone2Documentation_RecordsTheOwnerDecisionRegisterAndRuntimeStatus()
+    {
+        string[] requiredM2Docs =
+        [
+            "docs/specifications/M2/M2-DECISION-REGISTER.md",
+            "docs/milestones/M2-BUILD-PROGRESS.md",
+            "docs/specifications/M2/SECURITY-ARCHITECTURE.md",
+            "docs/specifications/M2/M2-ACCEPTANCE-CRITERIA.md"
+        ];
+
+        foreach (var doc in requiredM2Docs)
+        {
+            Assert.True(
+                File.Exists(Path.Combine(RepoRoot, doc.Replace('/', Path.DirectorySeparatorChar))),
+                $"Required M2 governance artifact missing: {doc}");
+        }
+
+        var register = File.ReadAllText(Path.Combine(RepoRoot, "docs", "specifications", "M2", "M2-DECISION-REGISTER.md"));
+        foreach (var entry in new[] { "D2-01", "D2-02", "D2-03", "D2-04", "D2-05", "D2-06", "D2-07", "D2-08", "D2-09", "D2-10" })
+        {
+            Assert.Contains(entry, register, StringComparison.Ordinal);
         }
     }
 

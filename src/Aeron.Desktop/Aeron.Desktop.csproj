@@ -19,5 +19,9 @@
   <ItemGroup>
     <ProjectReference Include="..\Aeron.Contracts\Aeron.Contracts.csproj" />
     <ProjectReference Include="..\Aeron.Core\Aeron.Core.csproj" />
+    <!-- The shell renders the security kernel's status and calls its preemption path, so
+         it references the kernel assembly directly. The dependency stays acyclic:
+         Desktop -> Core -> {Security, Infrastructure} and Desktop -> Security. -->
+    <ProjectReference Include="..\Aeron.Security\Aeron.Security.csproj" />
   </ItemGroup>
 </Project>
