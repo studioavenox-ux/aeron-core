@@ -3,8 +3,10 @@ using System.IO.Pipes;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
+using System.Windows;
 using Aeron.Contracts;
 using Aeron.Core;
+using Aeron.Desktop;
 using Aeron.Desktop.SingleInstance;
 using Aeron.Desktop.Tray;
 using Aeron.Desktop.ViewModels;
@@ -299,6 +301,83 @@ public sealed class MainWindowViewModelAndTrayStateTests
     }
 
     [Fact]
+    public async Task ViewModel_RepeatedHideRestoreCyclesKeepProcessRunningAndNoDuplicateIcons()
+    {
+        var tempRoot = Path.Combine(Path.GetTempPath(), $"aeron-vm-cycle-{Guid.NewGuid():N}");
+        try
+        {
+            await using var host = AeronFoundationHost.Create(AppPaths.FromRoot(tempRoot));
+            await host.Lifecycle.StartAsync();
+
+            var tray = new FakeSystemTrayService();
+            Assert.True(tray.Initialize("AERON"));
+
+            var hideCount = 0;
+            var restoreCount = 0;
+            var shutdownCount = 0;
+
+            using var vm = new MainWindowViewModel(
+                host.Lifecycle,
+                new FixedOsBaselineHealthService(host.HealthService, simulatedBuild: 26200),
+                host.EventBus,
+                tray,
+                host.Logger);
+
+            vm.HideToTrayRequested += (_, _) => hideCount++;
+            vm.RestoreWindowRequested += (_, _) => restoreCount++;
+            vm.ShutdownApplicationRequested += (_, _) => shutdownCount++;
+
+            await vm.InitializeAsync();
+
+            Assert.True(vm.CloseToTray);
+            Assert.Equal(AppLifecycleState.Running, host.Lifecycle.CurrentState);
+            Assert.True(tray.IsIconRegistered);
+            Assert.Equal(0, tray.DisposeCallCount);
+
+            // Repeated hide/restore cycles must keep the process running and must not
+            // create duplicate tray icons or duplicate windows.
+            for (var i = 0; i < 3; i++)
+            {
+                // Closing (X) minimizes to tray and keeps the process running.
+                var closeAction = vm.HandleWindowClosing();
+                Assert.Equal(WindowCloseAction.MinimizeToTray, closeAction);
+                Assert.True(vm.IsHiddenToTray);
+                Assert.False(vm.IsWindowVisible);
+                Assert.Equal(AppLifecycleState.Running, host.Lifecycle.CurrentState);
+                Assert.True(tray.IsIconRegistered);
+                Assert.Equal(0, tray.DisposeCallCount);
+
+                // Tray Open / double-click restores the existing window (no new instance).
+                tray.RaiseOpen();
+                Assert.False(vm.IsHiddenToTray);
+                Assert.True(vm.IsWindowVisible);
+                Assert.Equal(AppLifecycleState.Running, host.Lifecycle.CurrentState);
+                Assert.True(tray.IsIconRegistered);
+                Assert.Equal(0, tray.DisposeCallCount);
+            }
+
+            Assert.Equal(3, hideCount);
+            Assert.Equal(3, restoreCount);
+
+            // Explicit Exit performs a complete shutdown: tray icon removed, lifecycle stopped.
+            await vm.RequestExitAsync("Unit test exit");
+            Assert.True(vm.IsExplicitExitInProgress);
+            Assert.False(tray.IsIconRegistered);
+            Assert.Equal(1, tray.DisposeCallCount);
+            Assert.Equal(AppLifecycleState.Stopped, host.Lifecycle.CurrentState);
+            Assert.Equal(1, shutdownCount);
+            Assert.Equal(WindowCloseAction.AllowShutdown, vm.HandleWindowClosing());
+        }
+        finally
+        {
+            if (Directory.Exists(tempRoot))
+            {
+                Directory.Delete(tempRoot, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
     public async Task ViewModel_ConfigurableCloseToTrayAndBelowBaselineDetection_WorkCorrectly()
     {
         var tempRoot = Path.Combine(Path.GetTempPath(), $"aeron-vm-cfg-{Guid.NewGuid():N}");
@@ -368,5 +447,101 @@ public sealed class MainWindowViewModelAndTrayStateTests
                 Assert.True(NativeTrayMethods.DestroyIcon(hIcon));
             }
         }
+    }
+
+    /// <summary>
+    /// Runs the supplied WPF-sensitive action on a dedicated STA thread so a real
+    /// <see cref="System.Windows.Application"/> and <see cref="MainWindow"/> can be
+    /// instantiated. Async work is blocked with <see cref="Task.GetAwaiter().GetResult"/>
+    /// so the thread remains STA for the lifetime of the WPF objects. This exercises
+    /// the actual WPF window close-event path rather than the ViewModel in isolation.
+    /// </summary>
+    private static async Task RunOnStaThreadAsync(Action action)
+    {
+        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                action();
+                tcs.TrySetResult();
+            }
+            catch (Exception ex)
+            {
+                tcs.TrySetException(ex);
+            }
+        })
+        {
+            IsBackground = true
+        };
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+    }
+
+    [Fact]
+    public async Task MainWindow_CloseEvent_CloseToTrayEnabled_KeepsWindowAlive()
+    {
+        await RunOnStaThreadAsync(() =>
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), $"aeron-wpf-{Guid.NewGuid():N}");
+            var host = AeronFoundationHost.Create(AppPaths.FromRoot(tempRoot));
+            try
+            {
+                // Block on async startup so we remain on this STA thread for WPF work.
+                host.Lifecycle.StartAsync().GetAwaiter().GetResult();
+
+                var tray = new FakeSystemTrayService();
+                Assert.True(tray.Initialize("AERON"));
+
+                using var vm = new MainWindowViewModel(
+                    host.Lifecycle,
+                    new FixedOsBaselineHealthService(host.HealthService, simulatedBuild: 26200),
+                    host.EventBus,
+                    tray,
+                    host.Logger);
+
+                Assert.True(vm.CloseToTray);
+
+                // Build a real Application so MainWindow.InitializeComponent() can resolve
+                // the StaticResource brushes/styles from FoundationDark.xaml.
+                var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+                var themeUri = new Uri(
+                    "pack://application:,,,/Aeron.Desktop;component/Themes/FoundationDark.xaml",
+                    UriKind.Absolute);
+                app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = themeUri });
+
+                var window = new MainWindow(vm);
+                bool windowClosed = false;
+                window.Closed += (_, _) => windowClosed = true;
+
+                // Simulate the user clicking the window X.
+                window.Close();
+
+                // CloseToTray enabled: the window must NOT actually close; it is hidden
+                // to the tray and the process keeps running.
+                Assert.False(windowClosed);
+                Assert.Equal(AppLifecycleState.Running, host.Lifecycle.CurrentState);
+                Assert.True(tray.IsIconRegistered);
+                Assert.Equal(0, tray.DisposeCallCount);
+
+                app.Shutdown();
+            }
+            finally
+            {
+                try
+                {
+                    host.DisposeAsync().GetAwaiter().GetResult();
+                }
+                catch
+                {
+                    // Best-effort disposal; test outcome already determined.
+                }
+                if (Directory.Exists(tempRoot))
+                {
+                    Directory.Delete(tempRoot, recursive: true);
+                }
+            }
+        });
     }
 }

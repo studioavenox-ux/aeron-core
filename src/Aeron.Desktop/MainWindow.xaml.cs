@@ -28,22 +28,27 @@ public partial class MainWindow : Window
     {
         ArgumentNullException.ThrowIfNull(e);
 
-        var action = _viewModel.HandleWindowClosing();
-        if (action == WindowCloseAction.MinimizeToTray)
+        // D-M1-03: Closing the main window (X) minimizes AERON to the system tray
+        // when Close-to-Tray is enabled and no explicit exit is in progress. The
+        // AERON process keeps running (lifecycle, SQLite, logger, and tray icon
+        // all stay alive); the window is hidden, not closed.
+        if (!_viewModel.IsExplicitExitInProgress && _viewModel.CloseToTray)
         {
             e.Cancel = true;
+            _viewModel.MinimizeToTray();
             return;
         }
 
+        // Close-to-Tray disabled: cancel the immediate close so lifecycle, SQLite,
+        // logger, and system tray shut down deterministically before exiting.
         if (!_viewModel.IsExplicitExitInProgress)
         {
-            // CloseToTray is disabled: cancel immediate raw close so lifecycle, SQLite,
-            // logger, and system tray shut down deterministically before exiting.
             e.Cancel = true;
             _ = _viewModel.RequestExitAsync("Main window closed with CloseToTray disabled");
             return;
         }
 
+        // Explicit exit in progress: allow the window to close and complete shutdown.
         base.OnClosing(e);
     }
 
