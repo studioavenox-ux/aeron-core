@@ -30,8 +30,8 @@ public sealed class WindowsCredentialVault : IWindowsCredentialVault
     public const int MaxNameLength = 64;
 
     private const byte FormatVersion = 1;
-    private const int NonceSize = 12;
-    private const int TagSize = 16;
+    private const int NonceSize = VaultEnvelope.NonceSize;
+    private const int TagSize = VaultEnvelope.TagSize;
     private const int KeySize = 32;
 
     private readonly Lock _sync = new();
@@ -332,7 +332,7 @@ public sealed class WindowsCredentialVault : IWindowsCredentialVault
         var ciphertext = new byte[plaintext.Length];
         var tag = new byte[TagSize];
 
-        using var aes = new AesGcm(key, TagSize);
+        using var aes = new AesGcm(key);
         aes.Encrypt(nonce, plaintext, ciphertext, tag);
 
         var envelope = new byte[1 + NonceSize + TagSize + ciphertext.Length];
@@ -357,7 +357,7 @@ public sealed class WindowsCredentialVault : IWindowsCredentialVault
 
         try
         {
-            using var aes = new AesGcm(key, TagSize);
+            using var aes = new AesGcm(key);
             aes.Decrypt(nonce, ciphertext, tag, plaintext);
             return plaintext;
         }
@@ -427,6 +427,16 @@ public sealed class WindowsCredentialVault : IWindowsCredentialVault
 }
 
 /// <summary>
+/// Fixed envelope geometry for AES-256-GCM vault records: <c>version | nonce | tag |
+/// ciphertext</c>. Defined once so the production vault and the test protector cannot drift.
+/// </summary>
+internal static class VaultEnvelope
+{
+    public const int NonceSize = 12;
+    public const int TagSize = 16;
+}
+
+/// <summary>
 /// Default vault policy: deliberately NOT approved. The Owner has not yet chosen key
 /// recovery or backup semantics, so storing secrets is blocked rather than guessed.
 /// </summary>
@@ -451,17 +461,17 @@ public sealed class InMemoryDataProtector : IDataProtector
 
         try
         {
-            var nonce = RandomNumberGenerator.GetBytes(NonceSize);
+            var nonce = RandomNumberGenerator.GetBytes(VaultEnvelope.NonceSize);
             var ciphertext = new byte[plaintext.Length];
-            var tag = new byte[TagSize];
+            var tag = new byte[VaultEnvelope.TagSize];
 
-            using var aes = new AesGcm(_key, TagSize);
+            using var aes = new AesGcm(_key);
             aes.Encrypt(nonce, plaintext, ciphertext, tag);
 
-            protectedBytes = new byte[NonceSize + TagSize + ciphertext.Length];
+            protectedBytes = new byte[VaultEnvelope.NonceSize + VaultEnvelope.TagSize + ciphertext.Length];
             nonce.CopyTo(protectedBytes.AsSpan(0));
-            tag.CopyTo(protectedBytes.AsSpan(NonceSize));
-            ciphertext.CopyTo(protectedBytes.AsSpan(NonceSize + TagSize));
+            tag.CopyTo(protectedBytes.AsSpan(VaultEnvelope.NonceSize));
+            ciphertext.CopyTo(protectedBytes.AsSpan(VaultEnvelope.NonceSize + VaultEnvelope.TagSize));
             return true;
         }
         catch (CryptographicException)
@@ -474,20 +484,20 @@ public sealed class InMemoryDataProtector : IDataProtector
     {
         plaintext = [];
 
-        if (protectedBytes.Length <= NonceSize + TagSize)
+        if (protectedBytes.Length <= VaultEnvelope.NonceSize + VaultEnvelope.TagSize)
         {
             return false;
         }
 
         try
         {
-            var buffer = new byte[protectedBytes.Length - NonceSize - TagSize];
+            var buffer = new byte[protectedBytes.Length - VaultEnvelope.NonceSize - VaultEnvelope.TagSize];
 
-            using var aes = new AesGcm(_key, TagSize);
+            using var aes = new AesGcm(_key);
             aes.Decrypt(
-                protectedBytes[..NonceSize],
-                protectedBytes[(NonceSize + TagSize)..],
-                protectedBytes.Slice(NonceSize, TagSize),
+                protectedBytes[..VaultEnvelope.NonceSize],
+                protectedBytes[(VaultEnvelope.NonceSize + VaultEnvelope.TagSize)..],
+                protectedBytes.Slice(VaultEnvelope.NonceSize, VaultEnvelope.TagSize),
                 buffer);
 
             plaintext = buffer;
