@@ -2,7 +2,7 @@
 
 > Copyright (c) 2026 Avenox Studio. All Rights Reserved.
 >
-> Status: `OPEN — OWNER ACTION REQUIRED` for every entry below.
+> Status: `OPEN — OWNER ACTION REQUIRED` for `D2-02`–`D2-10`, `D2-01-T1`, and `D2-01-T2` (`D2-01` recorded as `RESOLVED (CONDITIONAL)` on `2026-11-28`; implementation not authorized).
 >
 > This register records only decisions that are **genuinely unresolved** and that the M2
 > implementation depends on. It does not restate, reselect, or reinterpret any confirmed
@@ -30,11 +30,15 @@ behavior" is not selecting an option.
 
 ## D2-01 — Owner MFA factor, enrollment, and recovery
 
-- **Status:** `UNRESOLVED`
+- **Status:** `RESOLVED (CONDITIONAL)`
+- **Resolution:** `Option A` — Windows Hello / TPM-bound platform authenticator (`DIRECT` attestation, `UV` `REQUIRED`, both enrollment and authentication ceremonies).
+- **Approved decision document:** `D2-01 Revision 3.10` (`APPROVED AS RECORDED` by Project Owner).
+- **Approval date:** `2026-11-28`
 - **Governance dependency:** U-8R.3 `C — Multi-Factor Authentication` is `CONFIRMED`; the
   factor combination, technology, enrollment, fallback and recovery were recorded as
-  `UNRESOLVED` in `docs/specifications/M2/U-08R.md`.
-- **What is unresolved:** which factor(s) satisfy U-8R.3; how the Owner enrolls; what
+  `UNRESOLVED` in `docs/specifications/M2/U-08R.md`. Recovery remains governed separately
+  under `D2-02`.
+- **Historical scope at time of entry (preserved):** which factor(s) satisfy U-8R.3; how the Owner enrolls; what
   happens when the Owner loses the factor; whether any fallback exists at all.
 - **Why implementation depends on it:** `IdentityAuthority.AuthenticateOwner` requires an
   `IOwnerFactorPolicy` that returns `IsApproved = true`. Production composition wires
@@ -42,7 +46,7 @@ behavior" is not selecting an option.
   production** and every Owner-only operation (permission provisioning, emergency-stop
   clear, approval decision, agent revocation) is denied. This is the intended
   fail-closed state, not a defect.
-- **Viable alternatives:**
+- **Viable alternatives (preserved unaltered):**
   - **A. Windows Hello / TPM-bound credential** via WebAuthn-style platform authenticator.
     Built-in, ₹0, hardware-backed when a TPM 2.0 is present (Windows 11 25H2 baseline
     requires TPM 2.0). Strongest phishing resistance.
@@ -53,16 +57,29 @@ behavior" is not selecting an option.
     key, which is a purchase (budget impact must be confirmed by the Owner).
   - **D. No MFA; SID + explicit Owner confirmation dialog.** Contradicts U-8R.3 and is
     listed only to be rejected explicitly.
-- **Security implications:** A is the only option that is both ₹0 and hardware-bound while
+- **Security implications (preserved unaltered):** A is the only option that is both ₹0 and hardware-bound while
   keeping the trust anchor on the device. B is defeated by any local process running as
   the same user (which is the same threat model the rest of M2 already accepts) but it
   still blocks "another person at the unlocked machine". C is the strongest but may cost
   money. D removes the second factor entirely.
-- **Recommendation:** **A — Windows Hello / TPM-bound platform authenticator**, with a
+- **Historical recommendation (preserved unaltered):** **A — Windows Hello / TPM-bound platform authenticator**, with a
   documented recovery path decided under D2-02. It satisfies U-8R.3 without new spending
   and without moving the trust anchor off-device.
-- **Current fail-closed behavior:** `UnapprovedOwnerFactorPolicy` never authenticates;
-  all Owner operations denied; the desktop surface reports the reason verbatim.
+- **Approved D2-01 Revision 3.10 summary and mandatory conditions (`2026-11-28`):**
+  - **Binding factor & ceremony rules:** Native Windows WebAuthn API (`webauthn.h`, `WEBAUTHN_API_VERSION_9` floor) + cryptographic assertions only (`UserConsentVerifier` alone never acceptable; no silent fallback to TOTP/software factors; Option C FIDO2 security key is never an automatic fallback; native origin validation is never claimed as browser-equivalent phishing resistance; recovery is separate under `D2-02`).
+  - **Hardware AAGUID allowlist:** Fixed allowlist of `08987058-cadc-4b81-b6e1-30de50dcbe96` (Windows Hello hardware, TPM-backed) and `9ddd1817-af5a-4672-a2b9-3e3dd95000a9` (Windows Hello VBS hardware, TPM-backed); software AAGUIDs (`6028b017-b1d4-4c02-b4b3-afcdafc96bb2`, `6e96969e-a5cf-4aad-9b56-305fe6c82795`) and all others rejected; AAGUID is a selector only, never proof of TPM backing.
+  - **TPM 2.0 attestation & `TPMA_OBJECT` / `TPMT_PUBLIC` verification (pinned to TCG TPM 2.0 Library Version 185, 12 March 2026):** `fmt = "tpm"` mandatory (`none` or non-`tpm` refused); full `certInfo` (`TPM_GENERATED_VALUE`, `TPM_ST_ATTEST_CERTIFY`, `extraData` under `attStmt.alg` hash, `attested.name`), `pubArea` ↔ COSE `credentialPublicKey`, AIK certificate (`2.23.133.8.3`, `CA = FALSE`), and `attStmt.alg` allowlist (`RS256` / `PS256` / `ES256`). Full 32-bit `TPMA_OBJECT` verification per Part 2 v1.85 §8.3.2 Table 37 & §8.3.3: Group A (`fixedTPM = 0x00000002`, `fixedParent = 0x00000010`, `sensitiveDataOrigin = 0x00000020`) all **SET**; Group B (`sign = 0x00040000` **SET**, `restricted = 0x00010000` **CLEAR**, `decrypt = 0x00020000` **CLEAR**, `x509sign = 0x00080000` **CLEAR** per Part 2 Table 37 / §8.3.3.15 & Part 3 §20.5.1 / §20.6.1); mandatory TPM consistency check `encryptedDuplication = 0x00000800` **CLEAR** when `fixedTPM` is SET (Part 2 §8.3.3.11, §8.3.3.1); reserved-bit mask `0xFFF0F009` (`must be 0`); bits 8/9 (`firmwareLimited` / `svnLimited`, Part 1 §41.3 / §41.4) parsed, reported, and consistency-checked without invented prohibitions; type-specific `TPMS_RSA_PARMS` (Table 228) vs `TPMS_ECC_PARMS` (Table 229) and `TPM_ALG_NULL` deprecation handling per Part 0 §3.1.4.2 (`TPM_ALG_NULL` rejected for ECC signing keys and never silently treated as a baseline `PASS` for RSA signing keys; final credential-key algorithm policy deferred to implementation design).
+  - **Gates & governance boundary:** Gate 1 (attestation verification) ∧ Gate 2 (`D2-01-T1` trust anchor) ∧ Gate 3 (approved hardware AAGUID ∧ `TPMA_OBJECT` / `TPMT_PUBLIC` checks). Approval of `D2-01` fixes the policy text only: **no `MakeCredential` operation is authorized, no `GetAssertion` probe is authorized, production Owner MFA remains disabled, `UnapprovedOwnerFactorPolicy` remains active, no implementation authorization is granted, and `D2-02` through `D2-10` remain `OPEN`.**
+- **Separate unresolved sub-dependencies (implementation-blocking):**
+  - **`D2-01-T1` — TPM attestation trust anchors:**
+    - **Status:** `OPEN / UNRESOLVED` (Gate 2 implementation-blocking; no alternative selected, no implicit default).
+    - **Alternatives:** **A.** Pinned TPM vendor root certificates shipped and governed by AERON; **B.** `LocalMachine` certificate stores with strict root constraints (noting `LocalMachine\Root` is not a dedicated trusted TPM attestation root store); **C.** Signed FIDO Metadata Service (MDS) snapshots.
+  - **`D2-01-T2` — Cleanup applicability for plugin-managed credentials:**
+    - **Status:** `OPEN / UNRESOLVED` (implementation-blocking for credential-creation probing; Gate 1 evidence unobtainable while `OPEN`).
+    - **Alternatives & standing:** **A.** Matching approved hardware AAGUID treated as proof of cleanup applicability (`excluded` by Owner direction `2026-11-26`); **B.** Require no plugin authenticator installed before running (`deferred` — reconsiderable only via a reliable independent mechanism; WebAuthn authenticator inventory alone insufficient); **C.** Post-creation empirical determination with unconditional exact-ID cleanup (`available, not selected`); **D.** Defer credential creation until cleanup applicability of `WebAuthNDeletePlatformCredential` / `WebAuthNGetPlatformCredentialList` to plugin-managed credentials is established through documented, supported platform behaviour (**recommended Owner direction, not a resolved decision**).
+    - **Seven binding restrictions while `D2-01-T2` remains `OPEN`:** (1) read-only WebAuthn API capability preflight remains permitted; (2) no `MakeCredential` operation is permitted; (3) an AAGUID match must not be used as proof of cleanup applicability; (4) no alternative deletion mechanism may be introduced without separate Owner authorization; (5) exact-ID deletion and verification requirements remain intact in full; (6) Alternative B may be reconsidered only if a reliable independent mechanism establishes that no plugin authenticator is installed; (7) empirical deletion success in a probe does not independently resolve `D2-01-T2`.
+- **Current fail-closed behavior:** `UnapprovedOwnerFactorPolicy` remains active and never authenticates;
+  all Owner operations remain denied; the desktop surface reports the reason verbatim until `D2-01-T1`, `D2-01-T2`, all gates, `D2-02`, and separate explicit Owner implementation authorization are satisfied.
 
 ## D2-02 — Owner secure recovery procedure
 
