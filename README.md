@@ -14,6 +14,8 @@ AERON — An intelligent, multi-agent personal AI assistant for Windows, built w
 
 Milestone 1 intentionally delivers only the verified native Windows desktop foundation: modular solution architecture, application lifecycle management, single-instance coordination, native Win32 system tray integration, secure user-scoped configuration, unconditional secret-redacting logging, SQLite WAL persistence with checksum-verified migrations, initial governance records, automated tests, and Windows GitHub Actions CI.
 
+Foundation adoption: the Sir Thaddeus (Apache-2.0) audit, compatibility verdicts, and proposed selective-adoption decision are recorded in [`docs/foundation/`](docs/foundation/SIR-THADDEUS-ADOPTION-AUDIT.md), with attribution in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). No upstream code has been imported.
+
 Model gateway integration (OmniRoute), full permission/approval enforcement, contextual memory, multi-agent execution, voice interaction, realistic avatars, and the interactive virtual headquarters are deferred to subsequent milestones per [`docs/architecture/BLUEPRINT.md`](docs/architecture/BLUEPRINT.md).
 
 ---
